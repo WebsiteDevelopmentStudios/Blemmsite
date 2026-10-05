@@ -50,30 +50,35 @@
 
   <main>
     <section id="home" class="page active-page">
-      <div class="hero">
-        <div class="eyebrow"><span class="status-dot"></span> Minehut community hub</div>
-        <h1>Play. Connect.<br><span>Make your mark.</span></h1>
-        <p class="hero-copy">Your place to stay connected with Minehut. Check out the community, keep up with what is happening, and manage your profile.</p>
-        <div class="hero-actions">
-          <button class="discord-button" data-action="login">Login with Discord</button>
-          <a class="ghost-button" href="#discord" data-page="discord">Explore Discord</a>
-        </div>
+      <div class="section-heading">
+        <div class="eyebrow"><span class="status-dot"></span> Minehut Store</div>
+        <h2>Shop</h2>
+        <p>Browse available Minehut products and redeem your Minecraft codes.</p>
       </div>
-      <div class="feature-grid">
-        <article class="glass-card">
-          <div class="card-icon">✦</div>
-          <h3>Community</h3>
-          <p>Discover the Minehut community and find people to play and chat with.</p>
+      <div class="shop-grid">
+        <article class="shop-card glass-card">
+          <div class="shop-art">MCFA</div>
+          <div class="shop-card-content">
+            <span class="server-label">Minecraft</span>
+            <h3>MCFA</h3>
+            <p>MCFA access and related Minehut content.</p>
+            <div class="shop-price">&lt;insert custom price&gt;</div>
+            <button class="discord-button" type="button" disabled>Purchase</button>
+          </div>
         </article>
-        <article class="glass-card">
-          <div class="card-icon">◈</div>
-          <h3>Your profile</h3>
-          <p>Connect your Discord account and keep your Minehut profile linked to your community identity.</p>
-        </article>
-        <article class="glass-card">
-          <div class="card-icon">↗</div>
-          <h3>Built for Discord</h3>
-          <p>A simple home for everything Minehut, built to keep things easy to find.</p>
+        <article class="shop-card glass-card">
+          <div class="shop-art">MC</div>
+          <div class="shop-card-content">
+            <span class="server-label">Digital code</span>
+            <h3>Minecraft redeem code</h3>
+            <p>Enter a valid code supplied by the Minehut team.</p>
+            <div class="shop-price">&lt;insert custom price&gt;</div>
+            <div class="redeem-box">
+              <input id="redeemCode" type="text" maxlength="100" placeholder="Enter redeem code" autocomplete="off">
+              <button id="redeemButton" class="ghost-button" type="button">Redeem</button>
+            </div>
+            <p id="redeemMessage" class="redeem-message" aria-live="polite"></p>
+          </div>
         </article>
       </div>
     </section>
@@ -110,6 +115,19 @@
           <p>Sign in with Discord to see your profile here.</p>
           <button class="discord-button" data-action="login">Login with Discord</button>
         </div>
+      </div>
+      <div class="developer-login glass-card">
+        <div class="section-heading compact">
+          <div class="eyebrow"><span class="status-dot"></span> Developer</div>
+          <h3>Developer sign in</h3>
+          <p>Developer access is separate from your Discord account.</p>
+        </div>
+        <form id="developerLoginForm">
+          <input id="developerUsername" type="text" placeholder="Developer username" autocomplete="username" required>
+          <input id="developerPassword" type="password" placeholder="Developer password" autocomplete="current-password" required>
+          <button class="discord-button" type="submit">Sign in as developer</button>
+        </form>
+        <p id="developerMessage" class="redeem-message" aria-live="polite"></p>
       </div>
     </section>
   </main>
