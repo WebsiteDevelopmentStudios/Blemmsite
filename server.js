@@ -20,6 +20,7 @@ app.use(express.static(path.join(__dirname)));
 function sign(value) {
   return crypto.createHmac("sha256", COOKIE_SECRET).update(value).digest("base64url");
 }
+
 function setCookie(res, name, value, options = {}) {
   const parts = [name + "=" + encodeURIComponent(value)];
   if (options.maxAge !== undefined) parts.push("Max-Age=" + Math.floor(options.maxAge / 1000));
@@ -41,63 +42,126 @@ function setSession(res, user) {
     path: "/"
   });
 }
+
 function readSession(req) {
   const header = req.headers.cookie || "";
   const match = header.match(/(?:^|; )blemm_session=([^;]+)/);
   if (!match) return null;
   const [payload, signature] = decodeURIComponent(match[1]).split(".");
   if (!payload || !signature || !COOKIE_SECRET) return null;
+
   const expected = sign(payload);
   const signatureBuffer = Buffer.from(signature);
   const expectedBuffer = Buffer.from(expected);
   if (signatureBuffer.length !== expectedBuffer.length) return null;
   if (!crypto.timingSafeEqual(signatureBuffer, expectedBuffer)) return null;
-  try { return JSON.parse(Buffer.from(payload, "base64url").toString()); } catch { return null; }
+
+  try {
+    return JSON.parse(Buffer.from(payload, "base64url").toString());
+  } catch {
+    return null;
+  }
 }
 
 app.get("/auth/discord", (req, res) => {
-  if (!CLIENT_ID || !CLIENT_SECRET) return res.status(500).send("Discord OAuth is not configured.");
+  if (!CLIENT_ID || !CLIENT_SECRET) {
+    return res.status(500).send("Discord OAuth is not configured.");
+  }
+
   const state = crypto.randomBytes(24).toString("hex");
+
   setCookie(res, "oauth_state", state, {
-    httpOnly: true, secure: process.env.NODE_ENV === "production",
-    sameSite: "Lax", maxAge: 10 * 60 * 1000, path: "/"
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "Lax",
+    maxAge: 10 * 60 * 1000,
+    path: "/"
   });
+
   const params = new URLSearchParams({
-    client_id: CLIENT_ID, response_type: "code", redirect_uri: REDIRECT_URI,
-    scope: "identify", state
+    client_id: CLIENT_ID,
+    response_type: "code",
+    redirect_uri: REDIRECT_URI,
+    scope: "identify",
+    state
   });
+
   res.redirect(`https://discord.com/oauth2/authorize?${params}`);
 });
 
 app.get("/auth/discord/callback", async (req, res) => {
   const cookie = (req.headers.cookie || "").match(/(?:^|; )oauth_state=([^;]+)/)?.[1];
+
   if (!req.query.code || !req.query.state || !cookie || cookie !== req.query.state) {
     return res.status(400).send("Invalid OAuth state.");
   }
+
   try {
     const tokenResponse = await fetch("https://discord.com/api/oauth2/token", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: new URLSearchParams({
-        client_id: CLIENT_ID, client_secret: CLIENT_SECRET, grant_type: "authorization_code",
-        code: req.query.code, redirect_uri: REDIRECT_URI
+        client_id: CLIENT_ID,
+        client_secret: CLIENT_SECRET,
+        grant_type: "authorization_code",
+        code: req.query.code,
+        redirect_uri: REDIRECT_URI
       })
     });
-    if (!tokenResponse.ok) throw new Error("Token exchange failed");
-    const token = await tokenResponse.json();
+
+    const tokenText = await tokenResponse.text();
+
+    if (!tokenResponse.ok) {
+      console.error("Discord token exchange failed:", tokenResponse.status, tokenText);
+      console.error("OAuth redirect URI used:", REDIRECT_URI);
+      return res.status(500).send(
+        `Discord token exchange failed. HTTP ${tokenResponse.status}. Check the Render logs for the exact Discord error.`
+      );
+    }
+
+    let token;
+    try {
+      token = JSON.parse(tokenText);
+    } catch {
+      console.error("Discord returned invalid token JSON:", tokenText);
+      return res.status(500).send("Discord returned an invalid token response.");
+    }
+
+    if (!token.access_token) {
+      console.error("Discord token response did not contain an access token.");
+      return res.status(500).send("Discord did not return an access token.");
+    }
+
     const userResponse = await fetch("https://discord.com/api/users/@me", {
       headers: { Authorization: `Bearer ${token.access_token}` }
     });
-    if (!userResponse.ok) throw new Error("Could not fetch Discord user");
-    const user = await userResponse.json();
+
+    const userText = await userResponse.text();
+
+    if (!userResponse.ok) {
+      console.error("Discord user request failed:", userResponse.status, userText);
+      return res.status(500).send("Could not fetch your Discord user.");
+    }
+
+    let user;
+    try {
+      user = JSON.parse(userText);
+    } catch {
+      console.error("Discord returned invalid user JSON:", userText);
+      return res.status(500).send("Discord returned an invalid user response.");
+    }
+
     setSession(res, {
-      id: user.id, username: user.username, global_name: user.global_name || null,
+      id: user.id,
+      username: user.username,
+      global_name: user.global_name || null,
       avatar: user.avatar || null
     });
+
     res.redirect("/#profile");
   } catch (error) {
-    console.error(error);
-    res.status(500).send("Discord login failed.");
+    console.error("Discord OAuth callback error:", error);
+    res.status(500).send("Discord login failed. Check the Render logs for details.");
   }
 });
 
