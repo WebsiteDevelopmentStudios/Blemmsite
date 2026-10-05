@@ -155,8 +155,11 @@ document.getElementById("createDeveloperForm").addEventListener("submit", async 
 });
 
 document.getElementById("developerLogout").addEventListener("click", async () => {
-  await api("/api/developer/logout", { method: "POST" });
-  window.location.replace("/index.html#profile");
+  try {
+    await api("/api/developer/logout", { method: "POST" });
+  } finally {
+    window.location.assign("/index.html#profile");
+  }
 });
 
 function escapeHtml(value) {
