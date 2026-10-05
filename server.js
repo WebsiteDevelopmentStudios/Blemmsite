@@ -10,11 +10,17 @@ const CLIENT_ID = process.env.DISCORD_CLIENT_ID;
 const CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET;
 const REDIRECT_URI = process.env.DISCORD_REDIRECT_URI || `${BASE_URL}/auth/discord/callback`;
 const COOKIE_SECRET = process.env.COOKIE_SECRET;
+const DEVELOPER_USR = process.env.DEVELOPER_USR;
+const DEVELOPER_PASS = process.env.DEVELOPER_PASS;
+const MINECRAFT_REDEEM_CODES = (process.env.MINECRAFT_REDEEM_CODES || "")
+  .split(",").map(code => code.trim()).filter(Boolean);
+const redeemedCodes = new Set();
 
 if (!CLIENT_ID || !CLIENT_SECRET || !COOKIE_SECRET) {
   console.warn("Set DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET, and COOKIE_SECRET before using Discord login.");
 }
 
+app.use(express.json());
 app.use(express.static(path.join(__dirname)));
 
 function sign(value) {
@@ -163,6 +169,49 @@ app.get("/auth/discord/callback", async (req, res) => {
     console.error("Discord OAuth callback error:", error);
     res.status(500).send("Discord login failed. Check the Render logs for details.");
   }
+});
+
+app.post("/api/redeem", (req, res) => {
+  const code = String(req.body?.code || "").trim();
+  if (!code) return res.status(400).json({ ok: false, message: "Enter a redeem code." });
+  if (!MINECRAFT_REDEEM_CODES.includes(code)) {
+    return res.status(404).json({ ok: false, message: "That redeem code is invalid." });
+  }
+  if (redeemedCodes.has(code)) {
+    return res.status(409).json({ ok: false, message: "That redeem code has already been redeemed." });
+  }
+  redeemedCodes.add(code);
+  res.json({ ok: true, message: "Code redeemed successfully." });
+});
+
+app.post("/api/developer/login", (req, res) => {
+  const username = String(req.body?.username || "");
+  const password = String(req.body?.password || "");
+  if (!DEVELOPER_USR || !DEVELOPER_PASS) {
+    return res.status(503).json({ ok: false, message: "Developer login is not configured." });
+  }
+  if (username !== DEVELOPER_USR || password !== DEVELOPER_PASS) {
+    return res.status(401).json({ ok: false, message: "Invalid developer credentials." });
+  }
+  setCookie(res, "developer_session", sign(username), {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "Lax",
+    maxAge: 1000 * 60 * 60 * 24 * 7,
+    path: "/"
+  });
+  res.json({ ok: true, message: "Developer sign-in successful." });
+});
+
+app.get("/api/developer/me", (req, res) => {
+  const header = req.headers.cookie || "";
+  const match = header.match(/(?:^|; )developer_session=([^;]+)/);
+  if (!match || !DEVELOPER_USR) return res.status(401).json({ authenticated: false });
+  try {
+    const value = decodeURIComponent(match[1]);
+    if (value === sign(DEVELOPER_USR)) return res.json({ authenticated: true, username: DEVELOPER_USR });
+  } catch {}
+  res.status(401).json({ authenticated: false });
 });
 
 app.get("/api/me", (req, res) => {
