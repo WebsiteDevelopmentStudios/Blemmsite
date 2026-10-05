@@ -1,0 +1,102 @@
+require("dotenv").config();
+const express = require("express");
+const crypto = require("crypto");
+const path = require("path");
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
+const CLIENT_ID = process.env.DISCORD_CLIENT_ID;
+const CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET;
+const REDIRECT_URI = process.env.DISCORD_REDIRECT_URI || `${BASE_URL}/auth/discord/callback`;
+const COOKIE_SECRET = process.env.COOKIE_SECRET;
+
+if (!CLIENT_ID || !CLIENT_SECRET || !COOKIE_SECRET) {
+  console.warn("Set DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET, and COOKIE_SECRET before using Discord login.");
+}
+
+app.use(express.static(path.join(__dirname)));
+
+function sign(value) {
+  return crypto.createHmac("sha256", COOKIE_SECRET).update(value).digest("base64url");
+}
+function setSession(res, user) {
+  const payload = Buffer.from(JSON.stringify(user)).toString("base64url");
+  const token = `${payload}.${sign(payload)}`;
+  res.cookie("blemm_session", token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    maxAge: 1000 * 60 * 60 * 24 * 7,
+    path: "/"
+  });
+}
+function readSession(req) {
+  const header = req.headers.cookie || "";
+  const match = header.match(/(?:^|; )blemm_session=([^;]+)/);
+  if (!match) return null;
+  const [payload, signature] = decodeURIComponent(match[1]).split(".");
+  if (!payload || !signature || !COOKIE_SECRET) return null;
+  const expected = sign(payload);
+  if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) return null;
+  try { return JSON.parse(Buffer.from(payload, "base64url").toString()); } catch { return null; }
+}
+
+app.get("/auth/discord", (req, res) => {
+  if (!CLIENT_ID || !CLIENT_SECRET) return res.status(500).send("Discord OAuth is not configured.");
+  const state = crypto.randomBytes(24).toString("hex");
+  res.cookie("oauth_state", state, {
+    httpOnly: true, secure: process.env.NODE_ENV === "production",
+    sameSite: "lax", maxAge: 10 * 60 * 1000, path: "/"
+  });
+  const params = new URLSearchParams({
+    client_id: CLIENT_ID, response_type: "code", redirect_uri: REDIRECT_URI,
+    scope: "identify", state
+  });
+  res.redirect(`https://discord.com/oauth2/authorize?${params}`);
+});
+
+app.get("/auth/discord/callback", async (req, res) => {
+  const cookie = (req.headers.cookie || "").match(/(?:^|; )oauth_state=([^;]+)/)?.[1];
+  if (!req.query.code || !req.query.state || !cookie || cookie !== req.query.state) {
+    return res.status(400).send("Invalid OAuth state.");
+  }
+  try {
+    const tokenResponse = await fetch("https://discord.com/api/oauth2/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        client_id: CLIENT_ID, client_secret: CLIENT_SECRET, grant_type: "authorization_code",
+        code: req.query.code, redirect_uri: REDIRECT_URI
+      })
+    });
+    if (!tokenResponse.ok) throw new Error("Token exchange failed");
+    const token = await tokenResponse.json();
+    const userResponse = await fetch("https://discord.com/api/users/@me", {
+      headers: { Authorization: `Bearer ${token.access_token}` }
+    });
+    if (!userResponse.ok) throw new Error("Could not fetch Discord user");
+    const user = await userResponse.json();
+    setSession(res, {
+      id: user.id, username: user.username, global_name: user.global_name || null,
+      avatar: user.avatar || null
+    });
+    res.redirect("/#profile");
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Discord login failed.");
+  }
+});
+
+app.get("/api/me", (req, res) => {
+  const user = readSession(req);
+  if (!user) return res.status(401).json({ authenticated: false });
+  res.json(user);
+});
+
+app.post("/auth/logout", (req, res) => {
+  res.clearCookie("blemm_session", { path: "/" });
+  res.status(204).end();
+});
+
+app.listen(PORT, () => console.log(`Blemm running at ${BASE_URL}`));
