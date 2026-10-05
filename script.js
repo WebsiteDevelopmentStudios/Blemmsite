@@ -28,38 +28,24 @@ document.querySelectorAll('[data-action="login"], #loginButton').forEach(button 
 });
 
 async function checkAuthentication() {
-  document.body.classList.add("auth-pending");
-
   try {
     const response = await fetch("/api/me", {
       credentials: "include",
       cache: "no-store"
     });
 
-    if (!response.ok) {
-      requireLogin();
-      return false;
-    }
+    if (!response.ok) return false;
 
     const user = await response.json();
-    if (!user?.id) {
-      requireLogin();
-      return false;
-    }
+    if (!user?.id) return false;
 
     document.body.classList.remove("auth-pending", "auth-required");
     renderProfile(user);
     return true;
   } catch (error) {
     console.error("Could not verify authentication:", error);
-    requireLogin();
     return false;
   }
-}
-
-function requireLogin() {
-  document.body.classList.remove("auth-pending");
-  document.body.classList.add("auth-required");
 }
 
 function renderProfile(user) {
@@ -73,7 +59,7 @@ function renderProfile(user) {
     <div>
       <span class="server-label">Discord account</span>
       <h3>${escapeHtml(user.global_name || user.username)}</h3>
-      <p>@${escapeHtml(user.username)} is connected to Blemm.</p>
+      <p>@${escapeHtml(user.username)} is connected to Minehut.</p>
       <button class="ghost-button" id="logoutButton">Log out</button>
     </div>`;
 
