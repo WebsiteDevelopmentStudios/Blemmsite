@@ -224,7 +224,8 @@ body.auth-required #loginGate { display: grid; }
   letter-spacing: .08em;
 }
 .developer-panel input,
-.developer-panel textarea {
+.developer-panel textarea,
+.developer-panel select {
   width: 100%;
   padding: 13px 14px;
   border: 1px solid var(--border);
@@ -238,7 +239,8 @@ body.auth-required #loginGate { display: grid; }
 }
 .developer-panel textarea { resize: vertical; line-height: 1.5; }
 .developer-panel input:focus,
-.developer-panel textarea:focus {
+.developer-panel textarea:focus,
+.developer-panel select:focus {
   border-color: rgba(120,99,156,.5);
 }
 .developer-account-form { margin-bottom: 18px; }
