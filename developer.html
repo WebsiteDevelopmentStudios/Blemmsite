@@ -77,6 +77,53 @@
 
   <script src="developer.js"></script>
   <script>
+    // Keep the protected portal visually clean without changing the site-wide navigation.
+    if (window.location.pathname === "/developer.html") {
+      window.history.replaceState({}, "", "/#developer");
+    }
+
+    async function renderDeveloperPasswords() {
+      const list = document.getElementById("developerUserList");
+      if (!list) return;
+
+      try {
+        const response = await fetch("/api/developer/users", {
+          credentials: "include",
+          cache: "no-store"
+        });
+        if (!response.ok) return;
+
+        const data = await response.json();
+        if (!Array.isArray(data.users)) return;
+
+        list.querySelectorAll(".developer-user").forEach(row => {
+          const username = row.querySelector("strong")?.textContent?.trim();
+          const user = data.users.find(item => item.username === username);
+          if (!user || user.role === "owner") return;
+
+          let password = row.querySelector(".developer-password");
+          if (!password) {
+            password = document.createElement("span");
+            password.className = "developer-password";
+            password.style.display = "block";
+            password.style.marginTop = "4px";
+            password.style.fontFamily = "monospace";
+            password.style.opacity = "0.9";
+            row.querySelector("div")?.appendChild(password);
+          }
+
+          password.textContent = user.password
+            ? "Password: " + user.password
+            : "Password: unavailable for this account";
+        });
+      } catch {}
+    }
+
+    const passwordObserver = new MutationObserver(renderDeveloperPasswords);
+    passwordObserver.observe(document.getElementById("developerUserList"), { childList: true, subtree: true });
+    renderDeveloperPasswords();
+  </script>
+  <script>
     // Password display is intentionally kept on the developer portal page only.
     async function showDeveloperPasswords() {
       try {
