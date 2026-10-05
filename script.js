@@ -27,31 +27,60 @@ document.querySelectorAll('[data-action="login"], #loginButton').forEach(button 
   button.addEventListener("click", loginWithDiscord);
 });
 
-async function renderProfile() {
+async function checkAuthentication() {
+  document.body.classList.add("auth-pending");
+
   try {
-    const response = await fetch("/api/me", { credentials: "include" });
-    if (!response.ok) return;
-    const user = await response.json();
-    if (!user?.username) return;
-    const card = document.getElementById("profileCard");
-    const avatar = user.avatar
-      ? `https://cdn.discordapp.com/avatars/${encodeURIComponent(user.id)}/${encodeURIComponent(user.avatar)}.png?size=256`
-      : "https://cdn.discordapp.com/embed/avatars/0.png";
-    card.innerHTML = `
-      <img class="profile-avatar" src="${escapeHtml(avatar)}" alt="">
-      <div>
-        <span class="server-label">Discord account</span>
-        <h3>${escapeHtml(user.global_name || user.username)}</h3>
-        <p>@${escapeHtml(user.username)} is connected to Blemm.</p>
-        <button class="ghost-button" id="logoutButton">Log out</button>
-      </div>`;
-    document.getElementById("logoutButton").addEventListener("click", async () => {
-      await fetch("/auth/logout", { method: "POST", credentials: "include" });
-      location.reload();
+    const response = await fetch("/api/me", {
+      credentials: "include",
+      cache: "no-store"
     });
+
+    if (!response.ok) {
+      requireLogin();
+      return false;
+    }
+
+    const user = await response.json();
+    if (!user?.id) {
+      requireLogin();
+      return false;
+    }
+
+    document.body.classList.remove("auth-pending", "auth-required");
+    renderProfile(user);
+    return true;
   } catch (error) {
-    console.error("Could not load profile:", error);
+    console.error("Could not verify authentication:", error);
+    requireLogin();
+    return false;
   }
+}
+
+function requireLogin() {
+  document.body.classList.remove("auth-pending");
+  document.body.classList.add("auth-required");
+}
+
+function renderProfile(user) {
+  const card = document.getElementById("profileCard");
+  const avatar = user.avatar
+    ? `https://cdn.discordapp.com/avatars/${encodeURIComponent(user.id)}/${encodeURIComponent(user.avatar)}.png?size=256`
+    : "https://cdn.discordapp.com/embed/avatars/0.png";
+
+  card.innerHTML = `
+    <img class="profile-avatar" src="${escapeHtml(avatar)}" alt="">
+    <div>
+      <span class="server-label">Discord account</span>
+      <h3>${escapeHtml(user.global_name || user.username)}</h3>
+      <p>@${escapeHtml(user.username)} is connected to Blemm.</p>
+      <button class="ghost-button" id="logoutButton">Log out</button>
+    </div>`;
+
+  document.getElementById("logoutButton").addEventListener("click", async () => {
+    await fetch("/auth/logout", { method: "POST", credentials: "include" });
+    location.reload();
+  });
 }
 
 function escapeHtml(value) {
@@ -60,6 +89,8 @@ function escapeHtml(value) {
   }[char]));
 }
 
-renderProfile();
-const initial = location.hash.slice(1);
-if (initial && document.getElementById(initial)) showPage(initial);
+checkAuthentication().then(authenticated => {
+  if (!authenticated) return;
+  const initial = location.hash.slice(1);
+  if (initial && document.getElementById(initial)) showPage(initial);
+});
