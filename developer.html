@@ -76,5 +76,44 @@
   </footer>
 
   <script src="developer.js"></script>
+  <script>
+    // Password display is intentionally kept on the developer portal page only.
+    async function showDeveloperPasswords() {
+      try {
+        const response = await fetch("/api/developer/users", {
+          credentials: "include",
+          cache: "no-store"
+        });
+        if (!response.ok) return;
+
+        const data = await response.json();
+        const list = document.getElementById("developerUserList");
+        if (!list || !Array.isArray(data.users)) return;
+
+        list.querySelectorAll(".developer-user").forEach(row => {
+          const username = row.querySelector("strong")?.textContent;
+          const user = data.users.find(item => item.username === username);
+          if (!user || user.role === "owner" || !user.password) return;
+
+          const details = row.querySelector("div");
+          if (!details || details.querySelector(".developer-password")) return;
+
+          const password = document.createElement("span");
+          password.className = "developer-password";
+          password.textContent = "Password: " + user.password;
+          details.appendChild(password);
+        });
+      } catch {}
+    }
+
+    const passwordDisplayTimer = setInterval(() => {
+      if (document.getElementById("developerUserList")?.children.length) {
+        clearInterval(passwordDisplayTimer);
+        showDeveloperPasswords();
+      }
+    }, 100);
+
+    setTimeout(() => clearInterval(passwordDisplayTimer), 10000);
+  </script>
 </body>
 </html>
