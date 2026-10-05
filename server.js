@@ -521,7 +521,12 @@ app.get("/api/developer/me", (req, res) => {
 });
 
 app.post("/api/developer/logout", (req, res) => {
-  setCookie(res, "developer_session", "", { maxAge: 0, path: "/" });
+  setCookie(res, "developer_session", "", {
+    maxAge: 0,
+    path: "/",
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "Lax"
+  });
   res.status(204).end();
 });
 
