@@ -95,3 +95,47 @@ footer { width: min(1120px,90%); margin: auto; padding: 24px 0 32px; display:fle
   footer { flex-direction: column; gap:8px; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; } }
+
+
+/* Authentication gate */
+body.auth-pending > header,
+body.auth-pending > main,
+body.auth-pending > footer {
+  visibility: hidden;
+}
+#loginGate {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: none;
+  place-items: center;
+  padding: 24px;
+  background: rgba(4, 2, 10, .58);
+  backdrop-filter: blur(10px);
+}
+body.auth-required #loginGate { display: grid; }
+.login-gate-card {
+  width: min(460px, 100%);
+  padding: 42px 34px;
+  text-align: center;
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  background: var(--panel-strong);
+  box-shadow: 0 30px 100px rgba(0,0,0,.45), 0 0 60px var(--glow);
+}
+.login-gate-card .brand-mark {
+  margin: 0 auto 20px;
+}
+.login-gate-card h1 {
+  margin: 0 0 10px;
+  font-size: clamp(28px, 6vw, 42px);
+}
+.login-gate-card p {
+  margin: 0 auto 26px;
+  max-width: 360px;
+  color: var(--muted);
+  line-height: 1.7;
+}
+.login-gate-card .discord-button {
+  width: 100%;
+}
