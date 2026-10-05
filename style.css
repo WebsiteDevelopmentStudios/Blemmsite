@@ -190,3 +190,88 @@ body.auth-required #loginGate { display: grid; }
 .discord-symbol{overflow:hidden}
 .discord-symbol img{width:100%;height:100%;object-fit:cover;display:block}
 @media(max-width:760px){.discord-panel{display:flex;padding-top:24px}.discord-server-banner{height:125px}.discord-panel>.discord-symbol,.discord-panel>.discord-info,.discord-panel>.discord-button{margin-top:72px}.discord-panel>.discord-info{margin-top:72px}}
+
+
+/* Developer portal */
+.developer-badge {
+  color: #aaa1b7;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+.ghost-button.small { padding: 9px 14px; font-size: 13px; }
+.developer-page { padding-top: 72px; }
+.developer-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+.developer-grid .developer-panel {
+  max-width: none;
+  margin-top: 0;
+  padding: 30px;
+}
+.developer-panel form { display: grid; gap: 14px; }
+.developer-panel label {
+  display: grid;
+  gap: 8px;
+  color: #aaa1b7;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+.developer-panel input,
+.developer-panel textarea {
+  width: 100%;
+  padding: 13px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  outline: none;
+  background: rgba(255,255,255,.035);
+  color: var(--text);
+  font: inherit;
+  text-transform: none;
+  letter-spacing: normal;
+}
+.developer-panel textarea { resize: vertical; line-height: 1.5; }
+.developer-panel input:focus,
+.developer-panel textarea:focus {
+  border-color: rgba(120,99,156,.5);
+}
+.developer-account-form { margin-bottom: 18px; }
+.developer-user-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 18px;
+}
+.developer-user {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 13px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: rgba(255,255,255,.025);
+}
+.developer-user strong { display: block; font-size: 14px; }
+.developer-user span {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.developer-user .user-remove { padding: 8px 11px; font-size: 12px; }
+.owner-label {
+  color: #aaa1b7 !important;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+@media (max-width: 760px) {
+  .developer-grid { grid-template-columns: 1fr; }
+  .developer-badge { display: none; }
+  .developer-page { padding-top: 48px; }
+}
