@@ -181,7 +181,7 @@ document.getElementById("developerLoginForm")?.addEventListener("submit", async 
     message.textContent = data.message || "Unable to sign in.";
     if (response.ok) {
       event.target.reset();
-      await loadDeveloperPanel();
+      window.location.href = "/developer.html";
     }
   } catch {
     message.textContent = "Unable to contact the server.";
