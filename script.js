@@ -1,6 +1,3 @@
-// Blemm site client logic.
-// Discord OAuth requires a small server-side callback because the client secret must never
-// be exposed in browser code. Set OAUTH_LOGIN_URL to your backend's /auth/discord endpoint.
 const CONFIG = {
   OAUTH_LOGIN_URL: "/auth/discord",
   DISCORD_INVITE_URL: "https://discord.com"
@@ -18,47 +15,43 @@ function showPage(name) {
   links.forEach(link => link.classList.toggle("active", link.dataset.page === target.id));
   if (location.hash !== "#" + target.id) history.replaceState(null, "", "#" + target.id);
 }
-
 links.forEach(link => link.addEventListener("click", event => {
   event.preventDefault();
   showPage(link.dataset.page);
 }));
 
 function loginWithDiscord() {
-  if (!CONFIG.OAUTH_LOGIN_URL || CONFIG.OAUTH_LOGIN_URL === "#") {
-    alert("Discord login is not configured yet. Set OAUTH_LOGIN_URL in script.js to your OAuth backend.");
-    return;
-  }
   window.location.href = CONFIG.OAUTH_LOGIN_URL;
 }
-
 document.querySelectorAll('[data-action="login"], #loginButton').forEach(button => {
   button.addEventListener("click", loginWithDiscord);
 });
 
-function renderProfile() {
-  const params = new URLSearchParams(location.search);
-  const user = {
-    id: params.get("discord_id"),
-    username: params.get("username"),
-    avatar: params.get("avatar")
-  };
-  if (!user.username) return;
-  const card = document.getElementById("profileCard");
-  const avatar = user.avatar || "https://cdn.discordapp.com/embed/avatars/0.png";
-  card.innerHTML = `
-    <img class="profile-avatar" src="${escapeHtml(avatar)}" alt="">
-    <div>
-      <span class="server-label">Discord account</span>
-      <h3>${escapeHtml(user.username)}</h3>
-      <p>Your Discord account is connected to Blemm.</p>
-      <button class="ghost-button" id="logoutButton">Log out</button>
-    </div>`;
-  document.getElementById("logoutButton").addEventListener("click", () => {
-    localStorage.removeItem("blemm_user");
-    history.replaceState(null, "", "#profile");
-    location.reload();
-  });
+async function renderProfile() {
+  try {
+    const response = await fetch("/api/me", { credentials: "include" });
+    if (!response.ok) return;
+    const user = await response.json();
+    if (!user?.username) return;
+    const card = document.getElementById("profileCard");
+    const avatar = user.avatar
+      ? `https://cdn.discordapp.com/avatars/${encodeURIComponent(user.id)}/${encodeURIComponent(user.avatar)}.png?size=256`
+      : "https://cdn.discordapp.com/embed/avatars/0.png";
+    card.innerHTML = `
+      <img class="profile-avatar" src="${escapeHtml(avatar)}" alt="">
+      <div>
+        <span class="server-label">Discord account</span>
+        <h3>${escapeHtml(user.global_name || user.username)}</h3>
+        <p>@${escapeHtml(user.username)} is connected to Blemm.</p>
+        <button class="ghost-button" id="logoutButton">Log out</button>
+      </div>`;
+    document.getElementById("logoutButton").addEventListener("click", async () => {
+      await fetch("/auth/logout", { method: "POST", credentials: "include" });
+      location.reload();
+    });
+  } catch (error) {
+    console.error("Could not load profile:", error);
+  }
 }
 
 function escapeHtml(value) {
