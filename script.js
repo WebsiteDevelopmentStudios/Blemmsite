@@ -1,9 +1,47 @@
 const CONFIG = {
   OAUTH_LOGIN_URL: "/auth/discord",
-  DISCORD_INVITE_URL: "https://discord.com"
+  DISCORD_INVITE_URL: "https://discord.gg/8tsmAVtqZx"
 };
 
 document.getElementById("year").textContent = new Date().getFullYear();
+
+
+async function loadDiscordServer() {
+  try {
+    const response = await fetch("/api/discord-server", { cache: "no-store" });
+    if (!response.ok) return;
+    const data = await response.json();
+    if (!data.ok) return;
+
+    document.getElementById("discordServerName").textContent = data.name;
+    document.getElementById("discordInvite").href = data.invite;
+
+    const icon = document.getElementById("discordServerIcon");
+    const fallback = document.getElementById("discordServerIconFallback");
+    if (data.icon) {
+      icon.src = data.icon;
+      icon.hidden = false;
+      fallback.hidden = true;
+    }
+
+    const banner = document.getElementById("discordServerBannerImage");
+    const bannerFallback = document.querySelector(".discord-server-banner-fallback");
+    if (data.banner) {
+      banner.src = data.banner;
+      banner.hidden = false;
+      bannerFallback.hidden = true;
+    }
+
+    if (data.approximateMemberCount !== null) {
+      document.getElementById("memberCount").textContent = data.approximateMemberCount.toLocaleString();
+    }
+    if (data.approximatePresenceCount !== null) {
+      document.getElementById("onlineCount").textContent = data.approximatePresenceCount.toLocaleString();
+    }
+  } catch (error) {
+    console.error("Could not load Discord server:", error);
+  }
+}
 
 async function loadStore() {
   try {
@@ -203,3 +241,4 @@ document.getElementById("developerStoreForm")?.addEventListener("submit", async 
 
 loadStore();
 loadDeveloperPanel();
+loadDiscordServer();
