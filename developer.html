@@ -44,10 +44,23 @@
           <form id="developerStoreForm">
             <label>MCFA price<input id="mcfaPrice" type="text" placeholder="e.g. $5.00" required></label>
             <label>Minecraft redeem code price<input id="minecraftPrice" type="text" placeholder="e.g. $10.00" required></label>
-            <label class="code-editor-label">Redeem codes
-              <textarea id="redeemCodes" rows="9" placeholder="One code per line"></textarea>
+            <button class="discord-button" type="submit">Save prices</button>
+          </form>
+          <div class="section-heading compact" style="margin-top:28px">
+            <h4>Create redeem code</h4>
+            <p>Create a code and choose who can use it.</p>
+          </div>
+          <form id="createRedeemCodeForm" class="developer-account-form">
+            <label>Redeem code name<input id="newRedeemCode" type="text" minlength="3" maxlength="100" placeholder="BLEMM-2026" required></label>
+            <label>Usage policy
+              <select id="redeemUsage" required>
+                <option value="per-user">Per user — each Discord account can redeem it once</option>
+                <option value="single-user">One user only — one Discord account total</option>
+              </select>
             </label>
-            <button class="discord-button" type="submit">Save store changes</button>
+            <button class="discord-button" type="submit">Create redeem code</button>
+          </form>
+          <div class="developer-user-list" id="redeemCodeList"></div>
           </form>
           <p id="developerStoreMessage" class="redeem-message" aria-live="polite"></p>
         </section>
