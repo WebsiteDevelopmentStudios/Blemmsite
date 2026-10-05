@@ -4,6 +4,18 @@ const CONFIG = {
 };
 
 document.getElementById("year").textContent = new Date().getFullYear();
+
+async function loadStore() {
+  try {
+    const response = await fetch("/api/store", { credentials: "include", cache: "no-store" });
+    if (!response.ok) return;
+    const data = await response.json();
+    document.getElementById("mcfaPriceDisplay").textContent = data.prices?.mcfa || "<insert custom price>";
+    document.getElementById("minecraftPriceDisplay").textContent = data.prices?.minecraft || "<insert custom price>";
+  } catch (error) {
+    console.error("Could not load store:", error);
+  }
+}
 document.getElementById("discordInvite").href = CONFIG.DISCORD_INVITE_URL;
 
 const pages = [...document.querySelectorAll(".page")];
@@ -129,8 +141,65 @@ document.getElementById("developerLoginForm")?.addEventListener("submit", async 
     });
     const data = await response.json();
     message.textContent = data.message || "Unable to sign in.";
-    if (response.ok) event.target.reset();
+    if (response.ok) {
+      event.target.reset();
+      await loadDeveloperPanel();
+    }
   } catch {
     message.textContent = "Unable to contact the server.";
   }
 });
+
+
+async function loadDeveloperPanel() {
+  const panel = document.getElementById("developerPanel");
+  if (!panel) return;
+  try {
+    const response = await fetch("/api/developer/store", { credentials: "include", cache: "no-store" });
+    if (!response.ok) {
+      panel.hidden = true;
+      return;
+    }
+    const data = await response.json();
+    document.getElementById("mcfaPrice").value = data.store.prices.mcfa;
+    document.getElementById("minecraftPrice").value = data.store.prices.minecraft;
+    document.getElementById("redeemCodes").value = data.store.codes.join("\n");
+    panel.hidden = false;
+  } catch (error) {
+    console.error("Could not load developer panel:", error);
+  }
+}
+
+document.getElementById("developerStoreForm")?.addEventListener("submit", async event => {
+  event.preventDefault();
+  const message = document.getElementById("developerStoreMessage");
+  const codes = document.getElementById("redeemCodes").value
+    .split(/\r?\n/)
+    .map(code => code.trim())
+    .filter(Boolean);
+  try {
+    const response = await fetch("/api/developer/store", {
+      method: "PUT",
+      headers: {"Content-Type":"application/json"},
+      credentials: "include",
+      body: JSON.stringify({
+        prices: {
+          mcfa: document.getElementById("mcfaPrice").value,
+          minecraft: document.getElementById("minecraftPrice").value
+        },
+        codes
+      })
+    });
+    const data = await response.json();
+    message.textContent = data.message || "Unable to save store settings.";
+    if (response.ok) {
+      await loadStore();
+      await loadDeveloperPanel();
+    }
+  } catch {
+    message.textContent = "Unable to contact the server.";
+  }
+});
+
+loadStore();
+loadDeveloperPanel();
