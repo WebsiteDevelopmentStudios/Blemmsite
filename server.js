@@ -20,13 +20,31 @@ const MINECRAFT_REDEEM_CODES = (process.env.MINECRAFT_REDEEM_CODES || "")
   .split(",").map(code => code.trim()).filter(Boolean);
 const STORE_FILE = path.join(__dirname, "store-data.json");
 
+function normalizeStoreCodes(codes, redeemed = []) {
+  const legacyRedeemed = new Set(redeemed);
+  return (Array.isArray(codes) ? codes : []).map(item => {
+    if (typeof item === "string") {
+      return {
+        code: item.trim(),
+        usage: "single-user",
+        redeemedBy: legacyRedeemed.has(item.trim()) ? ["legacy"] : []
+      };
+    }
+    return {
+      code: String(item?.code || "").trim(),
+      usage: item?.usage === "per-user" ? "per-user" : "single-user",
+      redeemedBy: Array.isArray(item?.redeemedBy) ? item.redeemedBy.map(String) : []
+    };
+  }).filter(item => item.code);
+}
+
 function loadStore() {
   const fallback = {
     prices: {
       mcfa: process.env.MCFA_PRICE || "<insert custom price>",
       minecraft: process.env.MINECRAFT_CODE_PRICE || "<insert custom price>"
     },
-    codes: MINECRAFT_REDEEM_CODES,
+    codes: normalizeStoreCodes(MINECRAFT_REDEEM_CODES),
     redeemed: []
   };
   try {
@@ -35,10 +53,11 @@ function loadStore() {
       return fallback;
     }
     const saved = JSON.parse(fs.readFileSync(STORE_FILE, "utf8"));
+    const oldRedeemed = Array.isArray(saved.redeemed) ? saved.redeemed : [];
     return {
       prices: { ...fallback.prices, ...(saved.prices || {}) },
-      codes: Array.isArray(saved.codes) ? saved.codes : fallback.codes,
-      redeemed: Array.isArray(saved.redeemed) ? saved.redeemed : []
+      codes: normalizeStoreCodes(saved.codes, oldRedeemed),
+      redeemed: []
     };
   } catch (error) {
     console.error("Could not load store data:", error);
@@ -360,45 +379,71 @@ app.get("/api/discord-server", async (req, res) => {
 app.get("/api/store", (req, res) => {
   res.json({
     prices: store.prices,
-    codesAvailable: store.codes.filter(code => !store.redeemed.includes(code)).length
+    codesAvailable: store.codes.length
   });
 });
 
 app.post("/api/redeem", (req, res) => {
+  const user = readSession(req);
+  if (!user?.id) {
+    return res.status(401).json({ ok: false, message: "Sign in with Discord before redeeming a code." });
+  }
+
   const code = String(req.body?.code || "").trim();
   if (!code) return res.status(400).json({ ok: false, message: "Enter a redeem code." });
-  if (!store.codes.includes(code)) {
+
+  const entry = store.codes.find(item => item.code === code);
+  if (!entry) {
     return res.status(404).json({ ok: false, message: "That redeem code is invalid." });
   }
-  if (store.redeemed.includes(code)) {
+
+  entry.redeemedBy = Array.isArray(entry.redeemedBy) ? entry.redeemedBy : [];
+
+  if (entry.usage === "single-user" && entry.redeemedBy.length > 0) {
     return res.status(409).json({ ok: false, message: "That redeem code has already been redeemed." });
   }
-  store.redeemed.push(code);
-  saveStore();
-  res.json({ ok: true, message: "Code redeemed successfully." });
+
+  if (entry.usage === "per-user" && entry.redeemedBy.includes(String(user.id))) {
+    return res.status(409).json({ ok: false, message: "You have already redeemed that code." });
+  }
+
+  entry.redeemedBy.push(String(user.id));
+
+  try {
+    saveStore();
+    res.json({ ok: true, message: "Code redeemed successfully." });
+  } catch (error) {
+    console.error("Could not save redemption:", error);
+    res.status(500).json({ ok: false, message: "Could not save the redemption." });
+  }
 });
 
 app.get("/api/developer/store", (req, res) => {
   if (!isDeveloper(req)) return res.status(401).json({ ok: false, message: "Developer authentication required." });
-  res.json({ ok: true, store });
+  res.json({
+    ok: true,
+    store: {
+      prices: store.prices,
+      codes: store.codes.map(item => ({
+        code: item.code,
+        usage: item.usage,
+        redemptionCount: Array.isArray(item.redeemedBy) ? item.redeemedBy.length : 0
+      }))
+    }
+  });
 });
 
 app.put("/api/developer/store", (req, res) => {
   if (!isDeveloper(req)) return res.status(401).json({ ok: false, message: "Developer authentication required." });
 
   const prices = req.body?.prices || {};
-  const codes = Array.isArray(req.body?.codes) ? req.body.codes : [];
-
-  const cleanCodes = [...new Set(codes.map(code => String(code).trim()).filter(Boolean))];
-  const redeemed = store.redeemed.filter(code => cleanCodes.includes(code));
 
   store = {
     prices: {
       mcfa: String(prices.mcfa ?? store.prices.mcfa).trim() || "<insert custom price>",
       minecraft: String(prices.minecraft ?? store.prices.minecraft).trim() || "<insert custom price>"
     },
-    codes: cleanCodes,
-    redeemed
+    codes: store.codes
   };
 
   try {
@@ -407,6 +452,48 @@ app.put("/api/developer/store", (req, res) => {
   } catch (error) {
     console.error("Could not save store data:", error);
     res.status(500).json({ ok: false, message: "Could not save store settings." });
+  }
+});
+
+app.post("/api/developer/codes", (req, res) => {
+  if (!isDeveloper(req)) return res.status(401).json({ ok: false, message: "Developer authentication required." });
+
+  const code = String(req.body?.code || "").trim();
+  const usage = req.body?.usage === "per-user" ? "per-user" : "single-user";
+
+  if (!/^[A-Za-z0-9_-]{3,100}$/.test(code)) {
+    return res.status(400).json({ ok: false, message: "Code must be 3-100 characters and use letters, numbers, hyphens, or underscores." });
+  }
+  if (store.codes.some(item => item.code.toLowerCase() === code.toLowerCase())) {
+    return res.status(409).json({ ok: false, message: "That redeem code already exists." });
+  }
+
+  store.codes.push({ code, usage, redeemedBy: [] });
+
+  try {
+    saveStore();
+    res.json({ ok: true, message: "Redeem code created." });
+  } catch (error) {
+    console.error("Could not save redeem code:", error);
+    res.status(500).json({ ok: false, message: "Could not save redeem code." });
+  }
+});
+
+app.delete("/api/developer/codes/:code", (req, res) => {
+  if (!isDeveloper(req)) return res.status(401).json({ ok: false, message: "Developer authentication required." });
+
+  const code = decodeURIComponent(req.params.code);
+  const index = store.codes.findIndex(item => item.code === code);
+  if (index === -1) return res.status(404).json({ ok: false, message: "Redeem code not found." });
+
+  store.codes.splice(index, 1);
+
+  try {
+    saveStore();
+    res.json({ ok: true, message: "Redeem code removed." });
+  } catch (error) {
+    console.error("Could not save redeem code removal:", error);
+    res.status(500).json({ ok: false, message: "Could not remove redeem code." });
   }
 });
 
