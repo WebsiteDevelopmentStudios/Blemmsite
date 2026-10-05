@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Developer Portal — Minehut</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="space" aria-hidden="true">
+    <div class="stars stars-one"></div><div class="stars stars-two"></div><div class="stars stars-three"></div>
+    <span class="shooting shooting-one"></span><span class="shooting shooting-two"></span><span class="shooting shooting-three"></span>
+    <span class="halloween-moon"></span><span class="halloween-fog"></span>
+    <span class="bat bat-one"></span><span class="bat bat-two"></span><span class="bat bat-three"></span>
+  </div>
+
+  <header class="navbar">
+    <a class="brand" href="/" aria-label="Minehut home">
+      <span class="brand-mark">M</span><span>Minehut</span>
+    </a>
+    <span class="developer-badge">Developer Portal</span>
+    <button id="developerLogout" class="ghost-button small" type="button">Log out</button>
+  </header>
+
+  <main>
+    <section class="page active-page developer-page">
+      <div class="section-heading">
+        <div class="eyebrow"><span class="status-dot"></span> Restricted access</div>
+        <h2>Developer Portal</h2>
+        <p>Manage Minehut store settings and developer accounts.</p>
+      </div>
+
+      <div class="developer-grid">
+        <section class="developer-panel glass-card">
+          <div class="section-heading compact">
+            <div class="eyebrow"><span class="status-dot"></span> Store</div>
+            <h3>Store management</h3>
+            <p>Edit prices and manage Minecraft redeem codes.</p>
+          </div>
+          <form id="developerStoreForm">
+            <label>MCFA price<input id="mcfaPrice" type="text" placeholder="e.g. $5.00" required></label>
+            <label>Minecraft redeem code price<input id="minecraftPrice" type="text" placeholder="e.g. $10.00" required></label>
+            <label class="code-editor-label">Redeem codes
+              <textarea id="redeemCodes" rows="9" placeholder="One code per line"></textarea>
+            </label>
+            <button class="discord-button" type="submit">Save store changes</button>
+          </form>
+          <p id="developerStoreMessage" class="redeem-message" aria-live="polite"></p>
+        </section>
+
+        <section class="developer-panel glass-card">
+          <div class="section-heading compact">
+            <div class="eyebrow"><span class="status-dot"></span> Access</div>
+            <h3>Developer accounts</h3>
+            <p>Create additional username and password accounts for your development team.</p>
+          </div>
+          <form id="createDeveloperForm" class="developer-account-form">
+            <label>Username<input id="newDeveloperUsername" type="text" minlength="3" maxlength="32" placeholder="developer-name" required></label>
+            <label>Password<input id="newDeveloperPassword" type="password" minlength="8" placeholder="At least 8 characters" required></label>
+            <button class="discord-button" type="submit">Create developer</button>
+          </form>
+          <p id="developerAccountMessage" class="redeem-message" aria-live="polite"></p>
+          <div class="developer-user-list" id="developerUserList"></div>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <span>© <span id="year"></span> Minehut</span>
+    <span>Developer access</span>
+  </footer>
+
+  <script src="developer.js"></script>
+</body>
+</html>
