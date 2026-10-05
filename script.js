@@ -94,3 +94,43 @@ checkAuthentication().then(authenticated => {
   const initial = location.hash.slice(1);
   if (initial && document.getElementById(initial)) showPage(initial);
 });
+
+document.getElementById("redeemButton")?.addEventListener("click", async () => {
+  const input = document.getElementById("redeemCode");
+  const message = document.getElementById("redeemMessage");
+  const code = input.value.trim();
+  if (!code) { message.textContent = "Enter a redeem code."; return; }
+  try {
+    const response = await fetch("/api/redeem", {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      credentials: "include",
+      body: JSON.stringify({code})
+    });
+    const data = await response.json();
+    message.textContent = data.message || "Unable to redeem code.";
+  } catch {
+    message.textContent = "Unable to contact the server.";
+  }
+});
+
+document.getElementById("developerLoginForm")?.addEventListener("submit", async event => {
+  event.preventDefault();
+  const message = document.getElementById("developerMessage");
+  try {
+    const response = await fetch("/api/developer/login", {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      credentials: "include",
+      body: JSON.stringify({
+        username: document.getElementById("developerUsername").value,
+        password: document.getElementById("developerPassword").value
+      })
+    });
+    const data = await response.json();
+    message.textContent = data.message || "Unable to sign in.";
+    if (response.ok) event.target.reset();
+  } catch {
+    message.textContent = "Unable to contact the server.";
+  }
+});
