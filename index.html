@@ -98,14 +98,21 @@
         <p>Join the community and stay connected.</p>
       </div>
       <div class="discord-panel glass-card">
-        <div class="discord-symbol">D</div>
+        <div class="discord-server-banner" id="discordServerBanner">
+          <img id="discordServerBannerImage" alt="" hidden>
+          <div class="discord-server-banner-fallback"></div>
+        </div>
+        <div class="discord-symbol">
+          <img id="discordServerIcon" alt="" hidden>
+          <span id="discordServerIconFallback">D</span>
+        </div>
         <div class="discord-info">
           <span class="server-label">Official community</span>
-          <h3>Minehut Discord</h3>
+          <h3 id="discordServerName">Minehut Discord</h3>
           <p>Chat, share projects, get updates, and hang out with other members.</p>
-          <div class="server-stats"><span><b id="memberCount">—</b> Members</span><span><b>Online</b> Community</span></div>
+          <div class="server-stats"><span><b id="memberCount">—</b> Members</span><span><b id="onlineCount">—</b> Online</span></div>
         </div>
-        <a id="discordInvite" class="discord-button" href="https://discord.com" target="_blank" rel="noopener">Join Discord</a>
+        <a id="discordInvite" class="discord-button" href="https://discord.gg/8tsmAVtqZx" target="_blank" rel="noopener">Join Discord</a>
       </div>
     </section>
 
