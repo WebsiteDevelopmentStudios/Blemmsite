@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Blemm — a community space built around Discord.">
+  <title>Blemm</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="space" aria-hidden="true">
+    <div class="stars stars-one"></div>
+    <div class="stars stars-two"></div>
+    <div class="stars stars-three"></div>
+    <span class="shooting shooting-one"></span>
+    <span class="shooting shooting-two"></span>
+    <span class="shooting shooting-three"></span>
+  </div>
+
+  <header class="navbar">
+    <a class="brand" href="#home" data-page="home" aria-label="Blemm home">
+      <span class="brand-mark">B</span>
+      <span>Blemm</span>
+    </a>
+    <nav class="nav-links" aria-label="Main navigation">
+      <a href="#home" data-page="home" class="nav-link active">Home</a>
+      <a href="#discord" data-page="discord" class="nav-link">Discord</a>
+      <a href="#profile" data-page="profile" class="nav-link">Profile</a>
+    </nav>
+    <button id="loginButton" class="discord-button small">Login with Discord</button>
+  </header>
+
+  <main>
+    <section id="home" class="page active-page">
+      <div class="hero">
+        <div class="eyebrow"><span class="status-dot"></span> Welcome to Blemm</div>
+        <h1>Find your place<br><span>among the stars.</span></h1>
+        <p class="hero-copy">A clean, community-first home for Blemm. Connect your Discord, meet the community, and make your profile yours.</p>
+        <div class="hero-actions">
+          <button class="discord-button" data-action="login">Continue with Discord</button>
+          <a class="ghost-button" href="#discord" data-page="discord">Explore Discord</a>
+        </div>
+      </div>
+      <div class="feature-grid">
+        <article class="glass-card">
+          <div class="card-icon">✦</div>
+          <h3>Community</h3>
+          <p>Keep up with the Blemm community and find the right place to hang out.</p>
+        </article>
+        <article class="glass-card">
+          <div class="card-icon">◈</div>
+          <h3>Your profile</h3>
+          <p>Sign in with Discord and bring your Discord identity into your Blemm profile.</p>
+        </article>
+        <article class="glass-card">
+          <div class="card-icon">↗</div>
+          <h3>Built for Discord</h3>
+          <p>Fast navigation, a focused interface, and a design that keeps the community front and center.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="discord" class="page">
+      <div class="section-heading">
+        <div class="eyebrow"><span class="status-dot"></span> Community</div>
+        <h2>The Blemm Discord</h2>
+        <p>Join the community and stay connected.</p>
+      </div>
+      <div class="discord-panel glass-card">
+        <div class="discord-symbol">D</div>
+        <div class="discord-info">
+          <span class="server-label">Official community</span>
+          <h3>Blemm Discord</h3>
+          <p>Chat, share projects, get updates, and hang out with other members.</p>
+          <div class="server-stats"><span><b id="memberCount">—</b> Members</span><span><b>Online</b> Community</span></div>
+        </div>
+        <a id="discordInvite" class="discord-button" href="https://discord.com" target="_blank" rel="noopener">Join Discord</a>
+      </div>
+    </section>
+
+    <section id="profile" class="page">
+      <div class="section-heading">
+        <div class="eyebrow"><span class="status-dot"></span> Account</div>
+        <h2>Your profile</h2>
+        <p>Your Discord identity, shown on Blemm.</p>
+      </div>
+      <div id="profileCard" class="profile-card glass-card">
+        <div class="profile-avatar placeholder-avatar">?</div>
+        <div>
+          <span class="server-label">Not signed in</span>
+          <h3>Welcome to Blemm</h3>
+          <p>Sign in with Discord to see your profile here.</p>
+          <button class="discord-button" data-action="login">Login with Discord</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <span>© <span id="year"></span> Blemm</span>
+    <span>Built for the community</span>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
