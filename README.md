@@ -1,40 +1,51 @@
 # Blemmsite
 
-A purple, space-themed Blemm website with:
+Purple, space-themed Blemm community website.
+
+## Included
 
 - Home page
-- Discord community page
-- Discord login entry point
-- Profile page
+- Discord community tab
+- Discord OAuth2 login
+- Discord-backed profile tab
 - Animated stars and shooting stars
 - Responsive mobile layout
+- Small Node/Express backend for secure OAuth
 
-## Discord OAuth
+## Run locally
 
-The frontend intentionally does not contain a Discord client secret. Discord OAuth authorization-code exchange should happen on a server/API.
+1. Install Node.js.
+2. Copy `.env.example` to `.env`.
+3. Create a Discord application at https://discord.com/developers/applications.
+4. Add this redirect URL to the Discord application's OAuth2 settings:
 
-Set this in `script.js`:
-
-```js
-const CONFIG = {
-  OAUTH_LOGIN_URL: "https://your-backend.example.com/auth/discord",
-  DISCORD_INVITE_URL: "https://discord.gg/your-server"
-};
+```
+http://localhost:3000/auth/discord/callback
 ```
 
-Your backend should:
+5. Put the application's client ID and client secret into `.env`.
+6. Replace `COOKIE_SECRET` with a long random value.
+7. Set the real Discord invite in `script.js`.
+8. Run:
 
-1. Redirect the visitor to Discord's OAuth2 authorization endpoint.
-2. Request the `identify` scope.
-3. Receive the authorization code at the configured callback URL.
-4. Exchange the code server-side using the Discord client secret.
-5. Fetch the user's Discord identity.
-6. Redirect back to this site with a secure session/cookie.
+```
+npm install
+npm start
+```
 
-Do not put the Discord client secret in `script.js`, `index.html`, or any public repository file.
+Then open http://localhost:3000.
 
-## Customize
+## Production
 
-Change `DISCORD_INVITE_URL` in `script.js` to the real server invite.
+Set:
 
-The visual theme, stars, shooting stars, cards, navigation, and responsive layout are all in `style.css`.
+- `BASE_URL` to the public HTTPS site URL.
+- `DISCORD_REDIRECT_URI` to `${BASE_URL}/auth/discord/callback`.
+- `DISCORD_CLIENT_ID`
+- `DISCORD_CLIENT_SECRET`
+- `COOKIE_SECRET`
+- `NODE_ENV=production`
+
+The exact production URL must also be registered as a Discord OAuth2 redirect URI.
+
+Never commit `.env` or expose the Discord client secret in frontend JavaScript.
