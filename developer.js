@@ -21,7 +21,7 @@ async function verifyDeveloper() {
     }
     return true;
   } catch {
-    window.location.replace("/#profile");
+    window.location.replace("/index.html#profile");
     return false;
   }
 }
@@ -29,13 +29,42 @@ async function verifyDeveloper() {
 async function loadStore() {
   const response = await api("/api/developer/store");
   if (!response.ok) {
-    window.location.replace("/#profile");
+    window.location.replace("/index.html#profile");
     return;
   }
   const data = await response.json();
   document.getElementById("mcfaPrice").value = data.store.prices.mcfa;
   document.getElementById("minecraftPrice").value = data.store.prices.minecraft;
-  document.getElementById("redeemCodes").value = data.store.codes.join("\n");
+  renderRedeemCodes(data.store.codes || []);
+}
+
+function renderRedeemCodes(codes) {
+  const list = document.getElementById("redeemCodeList");
+  list.innerHTML = codes.length ? codes.map(item => {
+    const policy = item.usage === "per-user"
+      ? "Per user"
+      : "One user only";
+    return `
+      <div class="developer-user">
+        <div>
+          <strong>${escapeHtml(item.code)}</strong>
+          <span>${policy} · ${item.redemptionCount || 0} redemption${item.redemptionCount === 1 ? "" : "s"}</span>
+        </div>
+        <button class="ghost-button code-remove" data-code="${escapeHtml(item.code)}" type="button">Remove</button>
+      </div>
+    `;
+  }).join("") : "<p>No redeem codes have been created yet.</p>";
+
+  list.querySelectorAll(".code-remove").forEach(button => {
+    button.addEventListener("click", async () => {
+      const code = button.dataset.code;
+      if (!confirm(`Remove redeem code "${code}"?`)) return;
+      const response = await api(`/api/developer/codes/${encodeURIComponent(code)}`, { method: "DELETE" });
+      const result = await response.json();
+      message("developerStoreMessage", result.message || "Unable to remove code.");
+      if (response.ok) await loadStore();
+    });
+  });
 }
 
 async function loadDevelopers() {
@@ -53,6 +82,7 @@ async function loadDevelopers() {
         <div>
           <strong>${escapeHtml(user.username)}</strong>
           <span>${escapeHtml(user.role)} · ${escapeHtml(created)}</span>
+          ${user.role !== "owner" && user.password ? `<span class="developer-password">Password: ${escapeHtml(user.password)}</span>` : ""}
         </div>
         ${removable ? `<button class="ghost-button user-remove" data-username="${escapeHtml(user.username)}" type="button">Remove</button>` : "<span class=\"owner-label\">Owner</span>"}
       </div>
@@ -63,7 +93,6 @@ async function loadDevelopers() {
     button.addEventListener("click", async () => {
       const username = button.dataset.username;
       if (!confirm(`Remove developer account "${username}"?`)) return;
-
       const response = await api(`/api/developer/users/${encodeURIComponent(username)}`, { method: "DELETE" });
       const result = await response.json();
       message("developerAccountMessage", result.message || "Unable to remove account.");
@@ -74,12 +103,6 @@ async function loadDevelopers() {
 
 document.getElementById("developerStoreForm").addEventListener("submit", async event => {
   event.preventDefault();
-
-  const codes = document.getElementById("redeemCodes").value
-    .split(/\r?\n/)
-    .map(code => code.trim())
-    .filter(Boolean);
-
   const response = await api("/api/developer/store", {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
@@ -87,18 +110,34 @@ document.getElementById("developerStoreForm").addEventListener("submit", async e
       prices: {
         mcfa: document.getElementById("mcfaPrice").value,
         minecraft: document.getElementById("minecraftPrice").value
-      },
-      codes
+      }
     })
   });
-
   const data = await response.json();
   message("developerStoreMessage", data.message || "Unable to save store settings.");
+  if (response.ok) await loadStore();
+});
+
+document.getElementById("createRedeemCodeForm").addEventListener("submit", async event => {
+  event.preventDefault();
+  const response = await api("/api/developer/codes", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      code: document.getElementById("newRedeemCode").value,
+      usage: document.getElementById("redeemUsage").value
+    })
+  });
+  const data = await response.json();
+  message("developerStoreMessage", data.message || "Unable to create redeem code.");
+  if (response.ok) {
+    event.target.reset();
+    await loadStore();
+  }
 });
 
 document.getElementById("createDeveloperForm").addEventListener("submit", async event => {
   event.preventDefault();
-
   const response = await api("/api/developer/users", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -107,7 +146,6 @@ document.getElementById("createDeveloperForm").addEventListener("submit", async 
       password: document.getElementById("newDeveloperPassword").value
     })
   });
-
   const data = await response.json();
   message("developerAccountMessage", data.message || "Unable to create developer.");
   if (response.ok) {
@@ -118,7 +156,7 @@ document.getElementById("createDeveloperForm").addEventListener("submit", async 
 
 document.getElementById("developerLogout").addEventListener("click", async () => {
   await api("/api/developer/logout", { method: "POST" });
-  window.location.replace("/#profile");
+  window.location.replace("/index.html#profile");
 });
 
 function escapeHtml(value) {
