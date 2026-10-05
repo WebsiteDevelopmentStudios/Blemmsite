@@ -65,6 +65,36 @@ function verifyPassword(password, stored) {
   return a.length === b.length && crypto.timingSafeEqual(a, b);
 }
 
+function encryptDeveloperPassword(password) {
+  if (!COOKIE_SECRET) throw new Error("COOKIE_SECRET is required to encrypt developer passwords.");
+  const key = crypto.createHash("sha256").update(COOKIE_SECRET).digest();
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv("aes-256-gcm", key, iv);
+  const encrypted = Buffer.concat([cipher.update(password, "utf8"), cipher.final()]);
+  return [
+    iv.toString("base64url"),
+    cipher.getAuthTag().toString("base64url"),
+    encrypted.toString("base64url")
+  ].join(".");
+}
+
+function decryptDeveloperPassword(value) {
+  if (!value || !COOKIE_SECRET) return null;
+  try {
+    const [ivText, tagText, encryptedText] = value.split(".");
+    if (!ivText || !tagText || !encryptedText) return null;
+    const key = crypto.createHash("sha256").update(COOKIE_SECRET).digest();
+    const decipher = crypto.createDecipheriv("aes-256-gcm", key, Buffer.from(ivText, "base64url"));
+    decipher.setAuthTag(Buffer.from(tagText, "base64url"));
+    return Buffer.concat([
+      decipher.update(Buffer.from(encryptedText, "base64url")),
+      decipher.final()
+    ]).toString("utf8");
+  } catch {
+    return null;
+  }
+}
+
 function loadDevelopers() {
   try {
     if (fs.existsSync(DEVELOPER_FILE)) {
@@ -416,7 +446,8 @@ app.get("/api/developer/users", (req, res) => {
     users: developers.users.map(user => ({
       username: user.username,
       role: user.role,
-      createdAt: user.createdAt
+      createdAt: user.createdAt,
+      password: user.role === "owner" ? null : decryptDeveloperPassword(user.passwordEncrypted)
     }))
   });
 });
@@ -441,6 +472,7 @@ app.post("/api/developer/users", (req, res) => {
   developers.users.push({
     username,
     password: passwordHash,
+    passwordEncrypted: encryptDeveloperPassword(password),
     role: "developer",
     createdAt: new Date().toISOString()
   });
