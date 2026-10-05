@@ -16,7 +16,7 @@ async function verifyDeveloper() {
   try {
     const response = await api("/api/developer/me");
     if (!response.ok) {
-      window.location.replace("/#profile");
+      window.location.replace("/index.html#profile");
       return false;
     }
     return true;
