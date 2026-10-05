@@ -2,6 +2,7 @@ require("dotenv").config();
 const express = require("express");
 const crypto = require("crypto");
 const path = require("path");
+const fs = require("fs");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -14,7 +15,50 @@ const DEVELOPER_USR = process.env.DEVELOPER_USR;
 const DEVELOPER_PASS = process.env.DEVELOPER_PASS;
 const MINECRAFT_REDEEM_CODES = (process.env.MINECRAFT_REDEEM_CODES || "")
   .split(",").map(code => code.trim()).filter(Boolean);
-const redeemedCodes = new Set();
+const STORE_FILE = path.join(__dirname, "store-data.json");
+
+function loadStore() {
+  const fallback = {
+    prices: {
+      mcfa: process.env.MCFA_PRICE || "<insert custom price>",
+      minecraft: process.env.MINECRAFT_CODE_PRICE || "<insert custom price>"
+    },
+    codes: MINECRAFT_REDEEM_CODES,
+    redeemed: []
+  };
+  try {
+    if (!fs.existsSync(STORE_FILE)) {
+      fs.writeFileSync(STORE_FILE, JSON.stringify(fallback, null, 2));
+      return fallback;
+    }
+    const saved = JSON.parse(fs.readFileSync(STORE_FILE, "utf8"));
+    return {
+      prices: { ...fallback.prices, ...(saved.prices || {}) },
+      codes: Array.isArray(saved.codes) ? saved.codes : fallback.codes,
+      redeemed: Array.isArray(saved.redeemed) ? saved.redeemed : []
+    };
+  } catch (error) {
+    console.error("Could not load store data:", error);
+    return fallback;
+  }
+}
+
+let store = loadStore();
+
+function saveStore() {
+  fs.writeFileSync(STORE_FILE, JSON.stringify(store, null, 2));
+}
+
+function isDeveloper(req) {
+  const header = req.headers.cookie || "";
+  const match = header.match(/(?:^|; )developer_session=([^;]+)/);
+  if (!match || !DEVELOPER_USR) return false;
+  try {
+    return decodeURIComponent(match[1]) === sign(DEVELOPER_USR);
+  } catch {
+    return false;
+  }
+}
 
 if (!CLIENT_ID || !CLIENT_SECRET || !COOKIE_SECRET) {
   console.warn("Set DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET, and COOKIE_SECRET before using Discord login.");
@@ -171,17 +215,57 @@ app.get("/auth/discord/callback", async (req, res) => {
   }
 });
 
+app.get("/api/store", (req, res) => {
+  res.json({
+    prices: store.prices,
+    codesAvailable: store.codes.filter(code => !store.redeemed.includes(code)).length
+  });
+});
+
 app.post("/api/redeem", (req, res) => {
   const code = String(req.body?.code || "").trim();
   if (!code) return res.status(400).json({ ok: false, message: "Enter a redeem code." });
-  if (!MINECRAFT_REDEEM_CODES.includes(code)) {
+  if (!store.codes.includes(code)) {
     return res.status(404).json({ ok: false, message: "That redeem code is invalid." });
   }
-  if (redeemedCodes.has(code)) {
+  if (store.redeemed.includes(code)) {
     return res.status(409).json({ ok: false, message: "That redeem code has already been redeemed." });
   }
-  redeemedCodes.add(code);
+  store.redeemed.push(code);
+  saveStore();
   res.json({ ok: true, message: "Code redeemed successfully." });
+});
+
+app.get("/api/developer/store", (req, res) => {
+  if (!isDeveloper(req)) return res.status(401).json({ ok: false, message: "Developer authentication required." });
+  res.json({ ok: true, store });
+});
+
+app.put("/api/developer/store", (req, res) => {
+  if (!isDeveloper(req)) return res.status(401).json({ ok: false, message: "Developer authentication required." });
+
+  const prices = req.body?.prices || {};
+  const codes = Array.isArray(req.body?.codes) ? req.body.codes : [];
+
+  const cleanCodes = [...new Set(codes.map(code => String(code).trim()).filter(Boolean))];
+  const redeemed = store.redeemed.filter(code => cleanCodes.includes(code));
+
+  store = {
+    prices: {
+      mcfa: String(prices.mcfa ?? store.prices.mcfa).trim() || "<insert custom price>",
+      minecraft: String(prices.minecraft ?? store.prices.minecraft).trim() || "<insert custom price>"
+    },
+    codes: cleanCodes,
+    redeemed
+  };
+
+  try {
+    saveStore();
+    res.json({ ok: true, message: "Store settings saved.", store });
+  } catch (error) {
+    console.error("Could not save store data:", error);
+    res.status(500).json({ ok: false, message: "Could not save store settings." });
+  }
 });
 
 app.post("/api/developer/login", (req, res) => {
