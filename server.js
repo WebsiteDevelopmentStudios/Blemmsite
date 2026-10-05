@@ -13,6 +13,8 @@ const REDIRECT_URI = process.env.DISCORD_REDIRECT_URI || `${BASE_URL}/auth/disco
 const COOKIE_SECRET = process.env.COOKIE_SECRET;
 const DEVELOPER_USR = process.env.DEVELOPER_USR;
 const DEVELOPER_PASS = process.env.DEVELOPER_PASS;
+const DISCORD_INVITE_CODE = "8tsmAVtqZx";
+const DISCORD_GUILD_ID = "1484873038926319739";
 const MINECRAFT_REDEEM_CODES = (process.env.MINECRAFT_REDEEM_CODES || "")
   .split(",").map(code => code.trim()).filter(Boolean);
 const STORE_FILE = path.join(__dirname, "store-data.json");
@@ -212,6 +214,48 @@ app.get("/auth/discord/callback", async (req, res) => {
   } catch (error) {
     console.error("Discord OAuth callback error:", error);
     res.status(500).send("Discord login failed. Check the Render logs for details.");
+  }
+});
+
+app.get("/api/discord-server", async (req, res) => {
+  try {
+    const response = await fetch(
+      `https://discord.com/api/v10/invites/${DISCORD_INVITE_CODE}?with_counts=true`
+    );
+    if (!response.ok) {
+      console.error("Discord invite lookup failed:", response.status);
+      return res.status(502).json({ ok: false, message: "Could not load Discord server information." });
+    }
+
+    const invite = await response.json();
+    const guild = invite.guild || {};
+
+    if (guild.id && guild.id !== DISCORD_GUILD_ID) {
+      console.error("Discord invite returned unexpected guild:", guild.id);
+      return res.status(502).json({ ok: false, message: "Discord server verification failed." });
+    }
+
+    const iconUrl = guild.icon
+      ? `https://cdn.discordapp.com/icons/${guild.id}/${guild.icon}.${guild.icon.startsWith("a_") ? "gif" : "png"}?size=256`
+      : null;
+
+    const bannerUrl = guild.banner
+      ? `https://cdn.discordapp.com/banners/${guild.id}/${guild.banner}.${guild.banner.startsWith("a_") ? "gif" : "png"}?size=1024`
+      : null;
+
+    res.json({
+      ok: true,
+      id: guild.id || DISCORD_GUILD_ID,
+      name: guild.name || "Minehut Community",
+      icon: iconUrl,
+      banner: bannerUrl,
+      approximateMemberCount: invite.approximate_member_count ?? null,
+      approximatePresenceCount: invite.approximate_presence_count ?? null,
+      invite: `https://discord.gg/${DISCORD_INVITE_CODE}`
+    });
+  } catch (error) {
+    console.error("Discord server lookup error:", error);
+    res.status(502).json({ ok: false, message: "Could not load Discord server information." });
   }
 });
 
