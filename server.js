@@ -20,13 +20,23 @@ app.use(express.static(path.join(__dirname)));
 function sign(value) {
   return crypto.createHmac("sha256", COOKIE_SECRET).update(value).digest("base64url");
 }
+function setCookie(res, name, value, options = {}) {
+  const parts = [name + "=" + encodeURIComponent(value)];
+  if (options.maxAge !== undefined) parts.push("Max-Age=" + Math.floor(options.maxAge / 1000));
+  if (options.path) parts.push("Path=" + options.path);
+  if (options.httpOnly) parts.push("HttpOnly");
+  if (options.secure) parts.push("Secure");
+  if (options.sameSite) parts.push("SameSite=" + options.sameSite);
+  res.append("Set-Cookie", parts.join("; "));
+}
+
 function setSession(res, user) {
   const payload = Buffer.from(JSON.stringify(user)).toString("base64url");
-  const token = `${payload}.${sign(payload)}`;
-  res.cookie("blemm_session", token, {
+  const token = payload + "." + sign(payload);
+  setCookie(res, "blemm_session", token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
+    sameSite: "Lax",
     maxAge: 1000 * 60 * 60 * 24 * 7,
     path: "/"
   });
@@ -38,16 +48,19 @@ function readSession(req) {
   const [payload, signature] = decodeURIComponent(match[1]).split(".");
   if (!payload || !signature || !COOKIE_SECRET) return null;
   const expected = sign(payload);
-  if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) return null;
+  const signatureBuffer = Buffer.from(signature);
+  const expectedBuffer = Buffer.from(expected);
+  if (signatureBuffer.length !== expectedBuffer.length) return null;
+  if (!crypto.timingSafeEqual(signatureBuffer, expectedBuffer)) return null;
   try { return JSON.parse(Buffer.from(payload, "base64url").toString()); } catch { return null; }
 }
 
 app.get("/auth/discord", (req, res) => {
   if (!CLIENT_ID || !CLIENT_SECRET) return res.status(500).send("Discord OAuth is not configured.");
   const state = crypto.randomBytes(24).toString("hex");
-  res.cookie("oauth_state", state, {
+  setCookie(res, "oauth_state", state, {
     httpOnly: true, secure: process.env.NODE_ENV === "production",
-    sameSite: "lax", maxAge: 10 * 60 * 1000, path: "/"
+    sameSite: "Lax", maxAge: 10 * 60 * 1000, path: "/"
   });
   const params = new URLSearchParams({
     client_id: CLIENT_ID, response_type: "code", redirect_uri: REDIRECT_URI,
@@ -95,7 +108,7 @@ app.get("/api/me", (req, res) => {
 });
 
 app.post("/auth/logout", (req, res) => {
-  res.clearCookie("blemm_session", { path: "/" });
+  setCookie(res, "blemm_session", "", { maxAge: 0, path: "/" });
   res.status(204).end();
 });
 
