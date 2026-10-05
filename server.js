@@ -106,12 +106,11 @@ seedOwnerDeveloper();
 function getDeveloper(req) {
   const header = req.headers.cookie || "";
   const match = header.match(/(?:^|; )developer_session=([^;]+)/);
-  if (!match) return null;
+  if (!match || !COOKIE_SECRET) return null;
   try {
-    const username = decodeURIComponent(match[1]);
-    const user = developers.users.find(entry => entry.username === username);
-    if (!user) return null;
-    return username === user.username && decodeURIComponent(match[1]) === username ? user : null;
+    const [username, signature] = decodeURIComponent(match[1]).split(".");
+    if (!username || !signature || signature !== sign(username)) return null;
+    return developers.users.find(user => user.username === username) || null;
   } catch {
     return null;
   }
@@ -388,7 +387,7 @@ app.post("/api/developer/login", (req, res) => {
   if (!developer || !verifyPassword(password, developer.password)) {
     return res.status(401).json({ ok: false, message: "Invalid developer credentials." });
   }
-  setCookie(res, "developer_session", username, {
+  setCookie(res, "developer_session", username + "." + sign(username), {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "Lax",
