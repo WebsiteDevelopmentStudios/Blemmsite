@@ -62,7 +62,7 @@
             <span class="server-label">Minecraft</span>
             <h3>MCFA</h3>
             <p>MCFA access and related Minehut content.</p>
-            <div class="shop-price">&lt;insert custom price&gt;</div>
+            <div id="mcfaPriceDisplay" class="shop-price">&lt;insert custom price&gt;</div>
             <button class="discord-button" type="button" disabled>Purchase</button>
           </div>
         </article>
@@ -72,7 +72,7 @@
             <span class="server-label">Digital code</span>
             <h3>Minecraft redeem code</h3>
             <p>Enter a valid code supplied by the Minehut team.</p>
-            <div class="shop-price">&lt;insert custom price&gt;</div>
+            <div id="minecraftPriceDisplay" class="shop-price">&lt;insert custom price&gt;</div>
 
           </div>
         </article>
@@ -136,6 +136,23 @@
           <button class="discord-button" type="submit">Sign in as developer</button>
         </form>
         <p id="developerMessage" class="redeem-message" aria-live="polite"></p>
+      </div>
+
+      <div id="developerPanel" class="developer-panel glass-card" hidden>
+        <div class="section-heading compact">
+          <div class="eyebrow"><span class="status-dot"></span> Developer panel</div>
+          <h3>Store management</h3>
+          <p>Edit prices and manage Minecraft redeem codes.</p>
+        </div>
+        <form id="developerStoreForm">
+          <label>MCFA price<input id="mcfaPrice" type="text" placeholder="e.g. $5.00" required></label>
+          <label>Minecraft redeem code price<input id="minecraftPrice" type="text" placeholder="e.g. $10.00" required></label>
+          <label class="code-editor-label">Redeem codes
+            <textarea id="redeemCodes" rows="7" placeholder="One code per line"></textarea>
+          </label>
+          <button class="discord-button" type="submit">Save store changes</button>
+        </form>
+        <p id="developerStoreMessage" class="redeem-message" aria-live="polite"></p>
       </div>
     </section>
   </main>
