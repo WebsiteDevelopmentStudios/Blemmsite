@@ -34,24 +34,6 @@ async function dataQuery(sql, params = []) {
 }
 const pool = { query: dataQuery };
 
-function normalizeStoreCodes(codes, redeemed = []) {
-  const legacyRedeemed = new Set(redeemed);
-  return (Array.isArray(codes) ? codes : []).map(item => {
-    if (typeof item === "string") {
-      return {
-        code: item.trim(),
-        usage: "single-user",
-        redeemedBy: legacyRedeemed.has(item.trim()) ? ["legacy"] : []
-      };
-    }
-    return {
-      code: String(item?.code || "").trim(),
-      usage: item?.usage === "per-user" ? "per-user" : "single-user",
-      redeemedBy: Array.isArray(item?.redeemedBy) ? item.redeemedBy.map(String) : []
-    };
-  }).filter(item => item.code);
-}
-
 function hashPassword(password, salt = crypto.randomBytes(16).toString("hex")) {
   const hash = crypto.pbkdf2Sync(password, salt, 120000, 64, "sha512").toString("hex");
   return { salt, hash };
@@ -176,21 +158,6 @@ async function requireDeveloperPage(req, res, next) {
 async function initializeDatabase() {
   const health = await fetch(DATA_API_URL + "/health", { headers: { "X-Data-Secret": DATA_API_SECRET } });
   if (!health.ok) throw new Error("Cloudflare D1 data service is unavailable.");
-  if (DEVELOPER_USR && DEVELOPER_PASS) {
-    const owner = await pool.query("SELECT username FROM developer_users WHERE username = $1 LIMIT 1", [DEVELOPER_USR]);
-    if (owner.rowCount === 0) {
-      const password = hashPassword(DEVELOPER_PASS);
-      await pool.query(
-        `INSERT INTO developer_users
-           (username, password_salt, password_hash, password_encrypted, role)
-         VALUES ($1, $2, $3, NULL, 'owner')`,
-        [DEVELOPER_USR, password.salt, password.hash]
-      );
-    } else {
-      await pool.query("UPDATE developer_users SET role = 'owner' WHERE username = $1", [DEVELOPER_USR]);
-    }
-  }
-
   const prices = await pool.query("SELECT mcfa, minecraft FROM store_prices WHERE id = 1 LIMIT 1");
   if (prices.rowCount === 0) {
     await pool.query("INSERT INTO store_prices (id, mcfa, minecraft) VALUES ($1, $2, $3)", [
@@ -686,7 +653,7 @@ app.delete("/api/developer/users/:username", async (req, res) => {
 
   if (
     username.toLowerCase() === String(developer.username).toLowerCase() ||
-    username.toLowerCase() === String(DEVELOPER_USR || "").toLowerCase()
+    developer.role === "owner"
   ) {
     return res.status(400).json({ ok: false, message: "The owner account cannot be deleted." });
   }
