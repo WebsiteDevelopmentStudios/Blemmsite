@@ -91,10 +91,17 @@
 
   <script src="developer.js"></script>
   <script>
-    document.getElementById("developerBrand")?.addEventListener("click", event => {
+    // The developer portal is a separate HTML document. Always leave it with
+    // a real browser navigation so index.html is freshly loaded.
+    document.addEventListener("click", event => {
+      const brand = event.target.closest("#developerBrand");
+      if (!brand) return;
+
       event.preventDefault();
-      window.location.assign("/#home");
-    });
+      event.stopImmediatePropagation();
+
+      window.location.replace(new URL("/#home", window.location.origin).href);
+    }, true);
 
     if (window.location.pathname === "/developer.html") {
       window.history.replaceState({}, "", "/#developer");
