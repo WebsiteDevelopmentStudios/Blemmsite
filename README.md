@@ -1,6 +1,6 @@
-# Blemmsite
+# MineLoot
 
-Purple, space-themed Blemm community website.
+Purple, space-themed MineLoot community website.
 
 ## Included
 
