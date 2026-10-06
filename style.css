@@ -278,3 +278,10 @@ body.auth-required #loginGate { display: grid; }
   .developer-badge { display: none; }
   .developer-page { padding-top: 48px; }
 }
+
+
+.profile-name{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.profile-role-icon{width:22px;height:22px;object-fit:contain;display:inline-block;image-rendering:auto;}
+.profile-server-status{margin-top:6px;}
+.profile-server-member{opacity:.8;}
+.profile-server-missing{color:#fff;opacity:.85;}
