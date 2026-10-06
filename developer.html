@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="robots" content="noindex,nofollow">
   <title>Developer Portal — MineLoot</title>
+  <link rel="icon" type="image/png" href="/pale_oak_log.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -20,7 +21,8 @@
 
   <header class="navbar">
     <a class="brand" href="/#home" aria-label="MineLoot home" id="developerBrand">
-      <span class="brand-mark">M</span><span>MineLoot</span>
+      <span class="brand-mark"><img src="/pale_oak_log.png" alt=""></span>
+      <span>MineLoot</span>
     </a>
     <span class="developer-badge">Developer Portal</span>
     <button id="developerLogout" class="ghost-button small" type="button">Log out</button>
@@ -61,7 +63,6 @@
             <button class="discord-button" type="submit">Create redeem code</button>
           </form>
           <div class="developer-user-list" id="redeemCodeList"></div>
-          </form>
           <p id="developerStoreMessage" class="redeem-message" aria-live="polite"></p>
         </section>
 
@@ -90,13 +91,11 @@
 
   <script src="developer.js"></script>
   <script>
-    // Force the developer logo to perform a real navigation/reload to the home page.
     document.getElementById("developerBrand")?.addEventListener("click", event => {
       event.preventDefault();
-      window.location.replace("/#home");
+      window.location.assign("/#home");
     });
 
-    // Keep the protected portal visually clean without changing the site-wide navigation.
     if (window.location.pathname === "/developer.html") {
       window.history.replaceState({}, "", "/#developer");
     }
@@ -104,14 +103,12 @@
     async function renderDeveloperPasswords() {
       const list = document.getElementById("developerUserList");
       if (!list) return;
-
       try {
         const response = await fetch("/api/developer/users", {
           credentials: "include",
           cache: "no-store"
         });
         if (!response.ok) return;
-
         const data = await response.json();
         if (!Array.isArray(data.users)) return;
 
@@ -143,7 +140,6 @@
     renderDeveloperPasswords();
   </script>
   <script>
-    // Password display is intentionally kept on the developer portal page only.
     async function showDeveloperPasswords() {
       try {
         const response = await fetch("/api/developer/users", {
