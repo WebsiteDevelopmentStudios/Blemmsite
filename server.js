@@ -234,7 +234,7 @@ app.get("/auth/discord", (req, res) => {
     client_id: CLIENT_ID,
     response_type: "code",
     redirect_uri: REDIRECT_URI,
-    scope: "identify",
+    scope: "identify guilds.members.read",
     state
   });
 
@@ -307,7 +307,8 @@ app.get("/auth/discord/callback", async (req, res) => {
       id: user.id,
       username: user.username,
       global_name: user.global_name || null,
-      avatar: user.avatar || null
+      avatar: user.avatar || null,
+      discord_access_token: token.access_token
     });
 
     res.redirect("/#profile");
@@ -711,70 +712,21 @@ app.delete("/api/developer/users/:username", async (req, res) => {
   }
 });
 
-async function getDiscordServerProfile(userId) {
-  if (!DISCORD_BOT_TOKEN) {
-    return {
-      inServer: false,
-      message: "Discord server role information is not configured."
-    };
-  }
+async function getDiscordServerMembership(accessToken) {
+  if (!accessToken) return { inServer: false };
 
-  const headers = {
-    Authorization: `Bot ${DISCORD_BOT_TOKEN}`
-  };
-
-  const memberResponse = await fetch(
-    `https://discord.com/api/v10/guilds/${DISCORD_GUILD_ID}/members/${encodeURIComponent(userId)}`,
-    { headers }
+  const response = await fetch(
+    "https://discord.com/api/v10/users/@me/guilds/" + DISCORD_GUILD_ID + "/member",
+    { headers: { Authorization: "Bearer " + accessToken } }
   );
 
-  if (memberResponse.status === 404) {
-    return {
-      inServer: false,
-      message: "You aren't in the Discord server."
-    };
+  if (response.status === 404) {
+    return { inServer: false, message: "You aren't in the Discord server." };
   }
-
-  if (!memberResponse.ok) {
-    throw new Error(`Discord member lookup failed: HTTP ${memberResponse.status}`);
+  if (!response.ok) {
+    throw new Error("Discord membership lookup failed: HTTP " + response.status);
   }
-
-  const member = await memberResponse.json();
-
-  const rolesResponse = await fetch(
-    `https://discord.com/api/v10/guilds/${DISCORD_GUILD_ID}/roles`,
-    { headers }
-  );
-
-  if (!rolesResponse.ok) {
-    throw new Error(`Discord role lookup failed: HTTP ${rolesResponse.status}`);
-  }
-
-  const roles = await rolesResponse.json();
-  const memberRoleIds = new Set(member.roles || []);
-  const memberRoles = roles
-    .filter(role => memberRoleIds.has(role.id))
-    .sort((a, b) => Number(b.position || 0) - Number(a.position || 0));
-
-  const coloredRole = memberRoles.find(role => Number(role.color || 0) !== 0);
-  const iconRole = memberRoles.find(role => role.icon);
-
-  let roleColor = null;
-  if (coloredRole) {
-    roleColor = "#" + Number(coloredRole.color).toString(16).padStart(6, "0");
-  }
-
-  let roleIcon = null;
-  if (iconRole?.icon) {
-    roleIcon = `https://cdn.discordapp.com/role-icons/${DISCORD_GUILD_ID}/${iconRole.id}/${iconRole.icon}.png?size=64`;
-  }
-
-  return {
-    inServer: true,
-    roleName: coloredRole?.name || iconRole?.name || null,
-    roleColor,
-    roleIcon
-  };
+  return { inServer: true, message: "You are in the Discord server." };
 }
 
 app.get("/api/me", async (req, res) => {
@@ -782,7 +734,7 @@ app.get("/api/me", async (req, res) => {
   if (!user) return res.status(401).json({ authenticated: false });
 
   try {
-    const serverProfile = await getDiscordServerProfile(user.id);
+    const serverProfile = await getDiscordServerMembership(user.discord_access_token);
     res.json({ ...user, serverProfile });
   } catch (error) {
     console.error("Could not load Discord server profile:", error);
@@ -790,7 +742,7 @@ app.get("/api/me", async (req, res) => {
       ...user,
       serverProfile: {
         inServer: false,
-        message: "Could not load your Discord server role."
+        message: "You aren't in the Discord server."
       }
     });
   }
