@@ -1,3 +1,10 @@
+// Normalize direct /index.html visits to the clean site URL.
+// This also lets the developer portal force a real document reload without
+// leaving /index.html visible in the address bar.
+if (window.location.pathname === "/index.html") {
+  window.history.replaceState({}, "", "/" + window.location.search + window.location.hash);
+}
+
 const CONFIG = {
   OAUTH_LOGIN_URL: "/auth/discord",
   DISCORD_INVITE_URL: "https://discord.gg/8tsmAVtqZx"
