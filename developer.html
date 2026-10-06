@@ -9,6 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -91,9 +92,12 @@
 
   <script src="developer.js"></script>
   <script>
-    // developer.html is a separate document. Do NOT use history.replaceState
-    // here: changing /developer.html into /#developer makes /#home a
-    // hash-only navigation, which does not reload the document.
+    // Keep the nice /#developer URL, but remember the real document is
+    // still /developer.html. The logo explicitly loads the root document.
+    if (window.location.pathname === "/developer.html") {
+      window.history.replaceState({}, "", "/#developer");
+    }
+
     document.addEventListener("click", event => {
       const brand = event.target.closest("#developerBrand");
       if (!brand) return;
@@ -101,9 +105,9 @@
       event.preventDefault();
       event.stopImmediatePropagation();
 
-      // Navigate from the actual /developer.html document to the site root.
-      // Because the pathname changes, the browser performs a full document load.
-      window.location.href = "/#home";
+      // Use index.html explicitly so this is a different document even
+      // though the visible developer URL is /#developer.
+      window.location.assign("/index.html#home");
     }, true);
 
     async function renderDeveloperPasswords() {
