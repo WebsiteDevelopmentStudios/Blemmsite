@@ -457,3 +457,30 @@ body.auth-required #loginGate { display: grid; }
     width: 100%;
   }
 }
+
+
+.click-effect {
+  position: fixed;
+  z-index: 9999;
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(154, 131, 189, .9);
+  border-radius: 50%;
+  pointer-events: none;
+  transform: translate(-50%, -50%) scale(.4);
+  box-shadow: 0 0 14px rgba(120, 99, 156, .5);
+  animation: click-effect .5s ease-out forwards;
+}
+@keyframes click-effect {
+  0% {
+    opacity: .9;
+    transform: translate(-50%, -50%) scale(.4);
+  }
+  55% {
+    opacity: .65;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(3.2);
+  }
+}
