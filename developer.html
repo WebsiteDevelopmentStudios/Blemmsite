@@ -91,8 +91,9 @@
 
   <script src="developer.js"></script>
   <script>
-    // The developer portal is a separate HTML document. Always leave it with
-    // a real browser navigation so index.html is freshly loaded.
+    // developer.html is a separate document. Do NOT use history.replaceState
+    // here: changing /developer.html into /#developer makes /#home a
+    // hash-only navigation, which does not reload the document.
     document.addEventListener("click", event => {
       const brand = event.target.closest("#developerBrand");
       if (!brand) return;
@@ -100,12 +101,10 @@
       event.preventDefault();
       event.stopImmediatePropagation();
 
-      window.location.replace(new URL("/#home", window.location.origin).href);
+      // Navigate from the actual /developer.html document to the site root.
+      // Because the pathname changes, the browser performs a full document load.
+      window.location.href = "/#home";
     }, true);
-
-    if (window.location.pathname === "/developer.html") {
-      window.history.replaceState({}, "", "/#developer");
-    }
 
     async function renderDeveloperPasswords() {
       const list = document.getElementById("developerUserList");
