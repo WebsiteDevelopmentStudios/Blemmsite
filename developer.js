@@ -155,10 +155,33 @@ document.getElementById("createDeveloperForm").addEventListener("submit", async 
 });
 
 document.getElementById("developerLogout").addEventListener("click", async () => {
+  const button = document.getElementById("developerLogout");
+  if (!button || button.disabled) return;
+
+  button.disabled = true;
+  button.textContent = "Logging out...";
+
   try {
-    await api("/api/developer/logout", { method: "POST" });
-  } finally {
-    window.location.replace("/#profile");
+    const response = await api("/api/developer/logout", {
+      method: "POST",
+      headers: { "Cache-Control": "no-store" }
+    });
+
+    // Always leave the protected developer document after logout.
+    // Use the main document explicitly so the developer portal cannot remain
+    // visible from browser history/cache after the session is cleared.
+    if (response.ok || response.status === 204) {
+      window.location.assign("/index.html#profile");
+      return;
+    }
+
+    button.disabled = false;
+    button.textContent = "Log out";
+    message("developerAccountMessage", "Unable to log out. Please try again.");
+  } catch {
+    button.disabled = false;
+    button.textContent = "Log out";
+    message("developerAccountMessage", "Unable to contact the server. Please try again.");
   }
 });
 
