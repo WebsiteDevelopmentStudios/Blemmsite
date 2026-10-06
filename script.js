@@ -249,3 +249,13 @@ document.getElementById("developerStoreForm")?.addEventListener("submit", async 
 loadStore();
 loadDeveloperPanel();
 loadDiscordServer();
+
+
+document.addEventListener("click", event => {
+  const ripple = document.createElement("span");
+  ripple.className = "click-effect";
+  ripple.style.left = event.clientX + "px";
+  ripple.style.top = event.clientY + "px";
+  document.body.appendChild(ripple);
+  ripple.addEventListener("animationend", () => ripple.remove());
+});
