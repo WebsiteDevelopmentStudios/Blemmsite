@@ -141,6 +141,20 @@
           <button class="ghost-button game-reset" id="resetMoneyButton" type="button">Reset to $150</button>
         </article>
 
+        <article class="mini-game glass-card wordle-game">
+          <div class="game-card-heading">
+            <div>
+              <span class="server-label">Daily puzzle</span>
+              <h3>Wordle</h3>
+            </div>
+            <div class="game-score">Guess <span id="wordleGuessCount">0</span>/6</div>
+          </div>
+          <div class="wordle-board" id="wordleBoard" aria-label="Wordle board"></div>
+          <div class="wordle-keyboard" id="wordleKeyboard" aria-label="Wordle keyboard"></div>
+          <div class="game-status" id="wordleStatus" aria-live="polite">Guess the 5-letter word.</div>
+          <button class="ghost-button game-reset" id="wordleResetButton" type="button">New Word</button>
+        </article>
+
         <article class="mini-game glass-card">
           <div class="game-card-heading">
             <div>
