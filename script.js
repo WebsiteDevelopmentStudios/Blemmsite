@@ -315,6 +315,28 @@ document.getElementById("developerStoreForm")?.addEventListener("submit", async 
     document.getElementById("doubleStatus").textContent = "Balance reset to $150.";
   });
 
+  // Wordle
+  const wordleBoard = document.getElementById("wordleBoard");
+  const wordleKeyboard = document.getElementById("wordleKeyboard");
+  const wordleStatus = document.getElementById("wordleStatus");
+  const wordleGuessCount = document.getElementById("wordleGuessCount");
+  const wordleReset = document.getElementById("wordleResetButton");
+  if (wordleBoard && wordleKeyboard) {
+    const words = ["apple","beach","black","block","brain","bread","brick","chair","cloud","crown","dream","earth","flame","ghost","grape","green","heart","house","light","magic","metal","mouse","night","ocean","paper","plant","queen","river","robot","round","sheep","smile","space","stone","storm","sword","table","thing","tiger","train","water","world","zebra"];
+    const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+    let answer = "", guesses = [], current = "", gameOver = false;
+    const state = {};
+    function newWordle() { answer=words[Math.floor(Math.random()*words.length)].toUpperCase(); guesses=[]; current=""; gameOver=false; Object.keys(state).forEach(k=>delete state[k]); wordleGuessCount.textContent="0"; wordleStatus.textContent="Guess the 5-letter word."; renderWordleBoard(); renderWordleKeyboard(); }
+    function getTileClass(guess,index) { if(guess[index]===answer[index]) return "wordle-correct"; if(answer.includes(guess[index])) return "wordle-present"; return "wordle-absent"; }
+    function renderWordleBoard() { wordleBoard.innerHTML=""; for(let row=0;row<6;row++){const guess=guesses[row]||(row===guesses.length?current:""); for(let col=0;col<5;col++){const tile=document.createElement("div"); tile.className="wordle-tile"; tile.textContent=guess[col]||""; if(guesses[row]) tile.classList.add(getTileClass(guess,col)); else if(guess[col]) tile.classList.add("wordle-filled"); wordleBoard.appendChild(tile);}} }
+    function addKey(parent,key,wide=false){const button=document.createElement("button"); button.type="button"; button.className="wordle-key"+(wide?" wordle-wide":""); button.textContent=key; button.dataset.wordleKey=key; button.addEventListener("click",()=>handleWordleKey(key)); parent.appendChild(button);}
+    function renderWordleKeyboard(){wordleKeyboard.innerHTML=""; const rows=[alphabet.slice(0,10),alphabet.slice(10,19),alphabet.slice(19)]; rows.forEach(row=>{const el=document.createElement("div");el.className="wordle-key-row";row.forEach(key=>addKey(el,key));wordleKeyboard.appendChild(el);}); addKey(wordleKeyboard.lastElementChild,"ENTER",true);addKey(wordleKeyboard.lastElementChild,"⌫",true); Object.keys(state).forEach(key=>{const button=document.querySelector('[data-wordle-key="'+key+'"]');if(button)button.classList.add(state[key]);});}
+    function submitWordle(){if(current.length!==5){wordleStatus.textContent="Your guess needs 5 letters.";return;}if(!words.includes(current.toLowerCase())){wordleStatus.textContent="That word isn't in the word list.";return;}const guess=current;guesses.push(guess);current="";wordleGuessCount.textContent=guesses.length;for(let i=0;i<5;i++){const cls=getTileClass(guess,i),letter=guess[i];if(cls==="wordle-correct")state[letter]="wordle-key-correct";else if(cls==="wordle-present"&&state[letter]!=="wordle-key-correct")state[letter]="wordle-key-present";else if(!state[letter])state[letter]="wordle-key-absent";}renderWordleBoard();renderWordleKeyboard();if(guess===answer){gameOver=true;wordleStatus.textContent="You got it!";}else if(guesses.length>=6){gameOver=true;wordleStatus.textContent="The word was "+answer+".";}else wordleStatus.textContent="Keep going.";}
+    function handleWordleKey(key){if(gameOver)return;if(key==="ENTER")return submitWordle();if(key==="⌫"){current=current.slice(0,-1);renderWordleBoard();return;}if(/^[A-Z]$/.test(key)&&current.length<5){current+=key;renderWordleBoard();}}
+    document.addEventListener("keydown",event=>{if(!document.getElementById("game")?.classList.contains("active-page"))return;if(/^[a-zA-Z]$/.test(event.key))handleWordleKey(event.key.toUpperCase());else if(event.key==="Enter")handleWordleKey("ENTER");else if(event.key==="Backspace")handleWordleKey("⌫");});
+    wordleReset.addEventListener("click",newWordle); newWordle();
+  }
+
   // Snake
   const canvas = document.getElementById("snakeCanvas");
   const snakeStart = document.getElementById("snakeStartButton");
