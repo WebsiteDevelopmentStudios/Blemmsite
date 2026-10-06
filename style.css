@@ -159,7 +159,7 @@ body.auth-required #loginGate { display: grid; }
 .shop-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:20px; }
 .shop-card { overflow:hidden; }
 .shop-art { min-height:180px; display:grid; place-items:center; font-size:42px; font-weight:800; letter-spacing:-.05em; color:#c6c9d4; background:linear-gradient(145deg,rgba(62,70,91,.34),rgba(47,38,61,.22)); border-bottom:1px solid var(--border); }
-.shop-art img { width:100%; height:100%; min-height:180px; display:block; object-fit:cover; }
+.shop-art img { width:100%; height:180px; display:block; object-fit:contain; filter:blur(1.5px); }
 .shop-card-content { padding:26px; }
 .shop-card h3 { font-size:26px; margin:8px 0 10px; }
 .shop-card p { color:var(--muted); line-height:1.65; font-size:14px; }
