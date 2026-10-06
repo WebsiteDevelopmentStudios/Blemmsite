@@ -258,6 +258,8 @@ document.addEventListener("click", event => {
   burst.className = "click-burst";
   ripple.style.left = event.clientX + "px";
   ripple.style.top = event.clientY + "px";
+  burst.style.left = event.clientX + "px";
+  burst.style.top = event.clientY + "px";
   document.body.appendChild(ripple);
   document.body.appendChild(burst);
   ripple.addEventListener("animationend", () => ripple.remove());
