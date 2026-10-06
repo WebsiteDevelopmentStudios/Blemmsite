@@ -50,10 +50,32 @@ function renderRedeemCodes(codes) {
           <strong>${escapeHtml(item.code)}</strong>
           <span>${policy} · ${item.redemptionCount || 0} redemption${item.redemptionCount === 1 ? "" : "s"}</span>
         </div>
-        <button class="ghost-button code-remove" data-code="${escapeHtml(item.code)}" type="button">Remove</button>
+        <div class="developer-code-actions">
+          <button class="ghost-button code-copy" data-code="${escapeHtml(item.code)}" type="button">Copy code</button>
+          <button class="ghost-button code-remove" data-code="${escapeHtml(item.code)}" type="button">Remove</button>
+        </div>
       </div>
     `;
   }).join("") : "<p>No redeem codes have been created yet.</p>";
+
+  list.querySelectorAll(".code-copy").forEach(button => {
+    button.addEventListener("click", async () => {
+      const code = button.dataset.code;
+      if (!code) return;
+
+      try {
+        await navigator.clipboard.writeText(code);
+        const originalText = button.textContent;
+        button.textContent = "Copied!";
+        message("developerStoreMessage", `Copied redeem code "${code}" to your clipboard.`);
+        setTimeout(() => {
+          button.textContent = originalText;
+        }, 1400);
+      } catch {
+        message("developerStoreMessage", "Unable to copy the code. Please copy it manually.");
+      }
+    });
+  });
 
   list.querySelectorAll(".code-remove").forEach(button => {
     button.addEventListener("click", async () => {
@@ -167,9 +189,6 @@ document.getElementById("developerLogout").addEventListener("click", async () =>
       headers: { "Cache-Control": "no-store" }
     });
 
-    // Always leave the protected developer document after logout.
-    // Use the main document explicitly so the developer portal cannot remain
-    // visible from browser history/cache after the session is cleared.
     if (response.ok || response.status === 204) {
       window.location.assign("/index.html#profile");
       return;
