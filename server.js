@@ -94,7 +94,7 @@ function setCookie(res, name, value, options = {}) {
 function setSession(res, user) {
   const payload = Buffer.from(JSON.stringify(user)).toString("base64url");
   const token = payload + "." + sign(payload);
-  setCookie(res, "blemm_session", token, {
+  setCookie(res, "mineloot_session", token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "Lax",
@@ -105,7 +105,7 @@ function setSession(res, user) {
 
 function readSession(req) {
   const header = req.headers.cookie || "";
-  const match = header.match(/(?:^|; )blemm_session=([^;]+)/);
+  const match = header.match(/(?:^|; )mineloot_session=([^;]+)/);
   if (!match) return null;
 
   try {
@@ -712,7 +712,7 @@ app.get("/api/me", async (req, res) => {
 });
 
 app.post("/auth/logout", (req, res) => {
-  setCookie(res, "blemm_session", "", {
+  setCookie(res, "mineloot_session", "", {
     maxAge: 0,
     path: "/",
     secure: process.env.NODE_ENV === "production",
@@ -724,7 +724,7 @@ app.post("/auth/logout", (req, res) => {
 async function start() {
   try {
     await initializeDatabase();
-    app.listen(PORT, () => console.log(`Blemm running at ${BASE_URL} with Cloudflare D1 persistence`));
+    app.listen(PORT, () => console.log(`MineLoot running at ${BASE_URL} with Cloudflare D1 persistence`));
   } catch (error) {
     console.error("Could not initialize Cloudflare D1:", error);
     process.exit(1);
