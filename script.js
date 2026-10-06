@@ -251,6 +251,14 @@ loadStore();
 loadDeveloperPanel();
 loadDiscordServer();
 
+// Prevent native image dragging (including dynamically inserted images).
+document.addEventListener("dragstart", event => {
+  if (event.target instanceof HTMLImageElement) event.preventDefault();
+});
+document.querySelectorAll("img").forEach(img => {
+  img.draggable = false;
+});
+
 
 document.addEventListener("click", event => {
   const x = event.clientX;
