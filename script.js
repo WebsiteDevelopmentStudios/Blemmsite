@@ -254,8 +254,12 @@ loadDiscordServer();
 document.addEventListener("click", event => {
   const ripple = document.createElement("span");
   ripple.className = "click-effect";
+  const burst = document.createElement("span");
+  burst.className = "click-burst";
   ripple.style.left = event.clientX + "px";
   ripple.style.top = event.clientY + "px";
   document.body.appendChild(ripple);
+  document.body.appendChild(burst);
   ripple.addEventListener("animationend", () => ripple.remove());
+  burst.addEventListener("animationend", () => burst.remove());
 });
