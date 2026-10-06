@@ -285,3 +285,63 @@ body.auth-required #loginGate { display: grid; }
 .profile-server-status{margin-top:6px;}
 .profile-server-member{opacity:.8;}
 .profile-server-missing{color:#fff;opacity:.85;}
+
+
+.youtube-panel {
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: 76px 1fr auto;
+  align-items: center;
+  gap: 28px;
+  margin-top: 22px;
+  padding: 32px;
+}
+.youtube-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 85% 15%, rgba(130,110,155,.14), transparent 34%);
+  pointer-events: none;
+}
+.youtube-symbol {
+  position: relative;
+  z-index: 1;
+  width: 76px;
+  height: 76px;
+  display: grid;
+  place-items: center;
+  border-radius: 22px;
+  background: linear-gradient(135deg, #5f536d, #463d59);
+  box-shadow: 0 15px 40px rgba(55,64,86,.2);
+  font-size: 28px;
+  color: #eeeaf4;
+}
+.youtube-info {
+  position: relative;
+  z-index: 1;
+}
+.youtube-info h3 {
+  font-size: 25px;
+  margin-top: 7px;
+}
+.youtube-info p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.65;
+  font-size: 14px;
+}
+.youtube-panel > .discord-button {
+  position: relative;
+  z-index: 1;
+}
+@media(max-width:760px) {
+  .youtube-panel {
+    display: flex;
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .youtube-panel > .discord-button {
+    width: 100%;
+  }
+}
