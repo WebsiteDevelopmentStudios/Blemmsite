@@ -327,11 +327,79 @@ document.getElementById("developerStoreForm")?.addEventListener("submit", async 
     let answer = "", guesses = [], current = "", gameOver = false;
     const state = {};
     function newWordle() { answer=words[Math.floor(Math.random()*words.length)].toUpperCase(); guesses=[]; current=""; gameOver=false; Object.keys(state).forEach(k=>delete state[k]); wordleGuessCount.textContent="0"; wordleStatus.textContent="Guess the 5-letter word."; renderWordleBoard(); renderWordleKeyboard(); }
-    function getTileClass(guess,index) { if(guess[index]===answer[index]) return "wordle-correct"; if(answer.includes(guess[index])) return "wordle-present"; return "wordle-absent"; }
-    function renderWordleBoard() { wordleBoard.innerHTML=""; for(let row=0;row<6;row++){const guess=guesses[row]||(row===guesses.length?current:""); for(let col=0;col<5;col++){const tile=document.createElement("div"); tile.className="wordle-tile"; tile.textContent=guess[col]||""; if(guesses[row]) tile.classList.add(getTileClass(guess,col)); else if(guess[col]) tile.classList.add("wordle-filled"); wordleBoard.appendChild(tile);}} }
+    function getWordleTileClasses(guess) {
+      const result = Array(5).fill("wordle-absent");
+      const remaining = {};
+      for (let i = 0; i < 5; i++) {
+        if (guess[i] === answer[i]) {
+          result[i] = "wordle-correct";
+        } else {
+          remaining[answer[i]] = (remaining[answer[i]] || 0) + 1;
+        }
+      }
+      for (let i = 0; i < 5; i++) {
+        if (result[i] === "wordle-correct") continue;
+        const letter = guess[i];
+        if (remaining[letter] > 0) {
+          result[i] = "wordle-present";
+          remaining[letter]--;
+        }
+      }
+      return result;
+    }
+    function renderWordleBoard() {
+      wordleBoard.innerHTML = "";
+      for (let row = 0; row < 6; row++) {
+        const guess = guesses[row] || (row === guesses.length ? current : "");
+        const classes = guesses[row] ? getWordleTileClasses(guess) : [];
+        for (let col = 0; col < 5; col++) {
+          const tile = document.createElement("div");
+          tile.className = "wordle-tile";
+          tile.textContent = guess[col] || "";
+          if (guesses[row]) tile.classList.add(classes[col]);
+          else if (guess[col]) tile.classList.add("wordle-filled");
+          wordleBoard.appendChild(tile);
+        }
+      }
+    }
     function addKey(parent,key,wide=false){const button=document.createElement("button"); button.type="button"; button.className="wordle-key"+(wide?" wordle-wide":""); button.textContent=key; button.dataset.wordleKey=key; button.addEventListener("click",()=>handleWordleKey(key)); parent.appendChild(button);}
     function renderWordleKeyboard(){wordleKeyboard.innerHTML=""; const rows=[alphabet.slice(0,10),alphabet.slice(10,19),alphabet.slice(19)]; rows.forEach(row=>{const el=document.createElement("div");el.className="wordle-key-row";row.forEach(key=>addKey(el,key));wordleKeyboard.appendChild(el);}); addKey(wordleKeyboard.lastElementChild,"ENTER",true);addKey(wordleKeyboard.lastElementChild,"⌫",true); Object.keys(state).forEach(key=>{const button=document.querySelector('[data-wordle-key="'+key+'"]');if(button)button.classList.add(state[key]);});}
-    function submitWordle(){if(current.length!==5){wordleStatus.textContent="Your guess needs 5 letters.";return;}if(!/^[A-Z]{5}$/.test(current)){wordleStatus.textContent="Use exactly 5 letters.";return;}const guess=current;guesses.push(guess);current="";wordleGuessCount.textContent=guesses.length;for(let i=0;i<5;i++){const cls=getTileClass(guess,i),letter=guess[i];if(cls==="wordle-correct")state[letter]="wordle-key-correct";else if(cls==="wordle-present"&&state[letter]!=="wordle-key-correct")state[letter]="wordle-key-present";else if(!state[letter])state[letter]="wordle-key-absent";}renderWordleBoard();renderWordleKeyboard();if(guess===answer){gameOver=true;wordleStatus.textContent="You got it!";}else if(guesses.length>=6){gameOver=true;wordleStatus.textContent="The word was "+answer+".";}else wordleStatus.textContent="Keep going.";}
+    function submitWordle() {
+      if (current.length !== 5) {
+        wordleStatus.textContent = "Your guess needs 5 letters.";
+        return;
+      }
+      if (!/^[A-Z]{5}$/.test(current)) {
+        wordleStatus.textContent = "Use exactly 5 letters.";
+        return;
+      }
+      const guess = current;
+      const classes = getWordleTileClasses(guess);
+      guesses.push(guess);
+      current = "";
+      wordleGuessCount.textContent = guesses.length;
+      for (let i = 0; i < 5; i++) {
+        const letter = guess[i];
+        if (classes[i] === "wordle-correct") {
+          state[letter] = "wordle-key-correct";
+        } else if (classes[i] === "wordle-present" && state[letter] !== "wordle-key-correct") {
+          state[letter] = "wordle-key-present";
+        } else if (!state[letter]) {
+          state[letter] = "wordle-key-absent";
+        }
+      }
+      renderWordleBoard();
+      renderWordleKeyboard();
+      if (guess === answer) {
+        gameOver = true;
+        wordleStatus.textContent = "You got it!";
+      } else if (guesses.length >= 6) {
+        gameOver = true;
+        wordleStatus.textContent = "The word was " + answer + ".";
+      } else {
+        wordleStatus.textContent = "Keep going.";
+      }
+    }
     function handleWordleKey(key){if(gameOver)return;if(key==="ENTER")return submitWordle();if(key==="⌫"){current=current.slice(0,-1);renderWordleBoard();return;}if(/^[A-Z]$/.test(key)&&current.length<5){current+=key;renderWordleBoard();}}
     document.addEventListener("keydown",event=>{if(!document.getElementById("game")?.classList.contains("active-page"))return;if(/^[a-zA-Z]$/.test(event.key))handleWordleKey(event.key.toUpperCase());else if(event.key==="Enter")handleWordleKey("ENTER");else if(event.key==="Backspace")handleWordleKey("⌫");});
     wordleReset.addEventListener("click",newWordle); newWordle();
