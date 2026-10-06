@@ -129,7 +129,7 @@ function renderProfile(user) {
     <div>
       <span class="server-label">Discord account</span>
       <h3 class="profile-name">${escapeHtml(user.global_name || user.username)}</h3>
-      <p>@${escapeHtml(user.username)} is connected to Minehut.</p>
+      <p>@${escapeHtml(user.username)} is connected to MineLoot.</p>
       <p class="profile-server-status ${inServer ? "profile-server-member" : "profile-server-missing"}">${membershipMessage}</p>
       <button class="ghost-button" id="logoutButton">Log out</button>
     </div>`;
