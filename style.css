@@ -519,3 +519,24 @@ body.auth-required #loginGate { display: grid; }
 /* Wordle */
 .wordle-board{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;width:min(310px,100%);margin:14px auto 18px}.wordle-tile{aspect-ratio:1;border:1px solid rgba(255,255,255,.16);border-radius:7px;display:grid;place-items:center;background:rgba(255,255,255,.035);color:var(--text);font-size:24px;font-weight:800}.wordle-filled{border-color:rgba(154,131,189,.55);background:rgba(120,99,156,.08)}.wordle-correct{background:#5d795f;border-color:#789b7b}.wordle-present{background:#827044;border-color:#a28d57}.wordle-absent{background:#34343d;border-color:#45454e;color:#aaa}.wordle-keyboard{display:grid;gap:6px;width:min(430px,100%);margin:0 auto}.wordle-key-row{display:flex;justify-content:center;gap:5px}.wordle-key{min-width:30px;height:42px;padding:0 7px;border:1px solid var(--border);border-radius:7px;background:rgba(255,255,255,.055);color:var(--text);font-weight:700;font-size:12px;cursor:pointer}.wordle-key:hover{background:rgba(120,99,156,.16)}.wordle-wide{min-width:54px;font-size:10px}.wordle-key-correct{background:#5d795f;border-color:#789b7b}.wordle-key-present{background:#827044;border-color:#a28d57}.wordle-key-absent{background:#34343d;border-color:#45454e;color:#999}.wordle-game .game-reset{display:block;margin-left:auto;margin-right:auto}
 @media(max-width:760px){.wordle-tile{font-size:20px}.wordle-key{min-width:27px;height:40px;padding:0 5px}.wordle-wide{min-width:48px}}
+
+
+.developer-code-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.developer-code-actions .ghost-button {
+  padding: 8px 11px;
+  font-size: 12px;
+}
+@media (max-width: 760px) {
+  .developer-code-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .developer-code-actions .ghost-button {
+    width: 100%;
+  }
+}
