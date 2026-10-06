@@ -1,1 +1,174 @@
-REDACTED
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Minehut — a community space built around Discord.">
+  <title>Minehut</title>
+  <link rel="icon" type="image/png" href="/pale_oak_log.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="space" aria-hidden="true">
+    <div class="stars stars-one"></div>
+    <div class="stars stars-two"></div>
+    <div class="stars stars-three"></div>
+    <span class="shooting shooting-one"></span>
+    <span class="shooting shooting-two"></span>
+    <span class="shooting shooting-three"></span>
+    <span class="halloween-moon"></span>
+    <span class="halloween-fog"></span>
+    <span class="bat bat-one"></span>
+    <span class="bat bat-two"></span>
+    <span class="bat bat-three"></span>
+  </div>
+
+  <div id="loginGate" aria-live="polite">
+    <div class="login-gate-card glass-card">
+      <div class="brand-mark">M</div>
+      <div class="eyebrow"><span class="status-dot"></span> Members only</div>
+      <h1>Login to Minehut</h1>
+      <p>You need to connect your Discord account before you can access the Minehut website.</p>
+      <button class="discord-button" data-action="login">Continue with Discord</button>
+    </div>
+  </div>
+
+  <header class="navbar">
+    <a class="brand" href="#home" data-page="home" aria-label="Minehut home">
+      <span class="brand-mark"><img src="/pale_oak_log.png" alt=""></span>
+      <span>Minehut</span>
+    </a>
+    <nav class="nav-links" aria-label="Main navigation">
+      <a href="#home" data-page="home" class="nav-link active">Shop</a>
+      <a href="#discord" data-page="discord" class="nav-link">Discord</a>
+      <a href="#profile" data-page="profile" class="nav-link">Profile</a>
+    </nav>
+    <button id="loginButton" class="discord-button small">Login with Discord</button>
+  </header>
+
+  <main>
+    <section id="home" class="page active-page">
+      <div class="section-heading">
+        <div class="eyebrow"><span class="status-dot"></span> Minehut Store</div>
+        <h2>Shop</h2>
+        <p>Browse available Minehut products and redeem your Minecraft codes.</p>
+      </div>
+      <div class="shop-grid">
+        <article class="shop-card glass-card">
+          <div class="shop-art">MCFA</div>
+          <div class="shop-card-content">
+            <span class="server-label">Minecraft</span>
+            <h3>MCFA</h3>
+            <p>to redeem this, you need to create a ticket in the discord server for now.</p>
+            <div id="mcfaPriceDisplay" class="shop-price">&lt;insert custom price&gt;</div>
+            <a class="discord-button" href="https://discord.gg/8tsmAVtqZx" target="_blank" rel="noopener">Purchase</a>
+          </div>
+        </article>
+        <article class="shop-card glass-card">
+          <div class="shop-art">MC</div>
+          <div class="shop-card-content">
+            <span class="server-label">Digital code</span>
+            <h3>Redeem code</h3>
+            <p>to redeem this, you need to create a ticket in the discord server for now.</p>
+            <div id="minecraftPriceDisplay" class="shop-price">&lt;insert custom price&gt;</div>
+            <a class="discord-button" href="https://discord.gg/8tsmAVtqZx" target="_blank" rel="noopener">Purchase</a>
+          </div>
+        </article>
+      </div>
+      <div class="youtube-panel glass-card">
+        <div class="youtube-backdrop" aria-hidden="true">
+          <div class="youtube-red-streak youtube-red-streak-one"></div>
+          <div class="youtube-red-streak youtube-red-streak-two"></div>
+          <div class="youtube-red-streak youtube-red-streak-three"></div>
+        </div>
+        <div class="youtube-symbol">
+          <img src="https://unavatar.io/youtube/ShadowEmpire00" alt="Shadow Empire YouTube profile picture">
+        </div>
+        <div class="youtube-info">
+          <span class="server-label">YouTube</span>
+          <h3>Subscribe to Shadow Empire</h3>
+          <p>Subscribe to the YouTube channel for videos, updates, and more.</p>
+        </div>
+        <a class="youtube-subscribe-button" href="https://www.youtube.com/@ShadowEmpire00?sub_confirmation=1" target="_blank" rel="noopener">Subscribe</a>
+      </div>
+      <div class="redeem-panel glass-card">
+        <div class="section-heading compact">
+          <div class="eyebrow"><span class="status-dot"></span> Redeem</div>
+          <h3>Redeem a Minecraft code</h3>
+          <p>Enter a valid code supplied by the Minehut team.</p>
+        </div>
+        <div class="redeem-box">
+          <input id="redeemCode" type="text" maxlength="100" placeholder="Enter redeem code" autocomplete="off">
+          <button id="redeemButton" class="ghost-button" type="button">Redeem</button>
+        </div>
+        <p id="redeemMessage" class="redeem-message" aria-live="polite"></p>
+      </div>
+    </section>
+
+    <section id="discord" class="page">
+      <div class="section-heading">
+        <div class="eyebrow"><span class="status-dot"></span> Community</div>
+        <h2>The Minehut Discord</h2>
+        <p>Join the community and stay connected.</p>
+      </div>
+      <div class="discord-panel glass-card">
+        <div class="discord-server-banner" id="discordServerBanner">
+          <img id="discordServerBannerImage" alt="" hidden>
+          <div class="discord-server-banner-fallback"></div>
+        </div>
+        <div class="discord-symbol">
+          <img id="discordServerIcon" alt="" hidden>
+          <span id="discordServerIconFallback">D</span>
+        </div>
+        <div class="discord-info">
+          <span class="server-label">Official community</span>
+          <h3 id="discordServerName">Minehut Discord</h3>
+          <p>Chat, share projects, get updates, and hang out with other members.</p>
+          <div class="server-stats"><span><b id="memberCount">—</b> Members</span><span><b id="onlineCount">—</b> Online</span></div>
+        </div>
+        <a id="discordInvite" class="discord-button" href="https://discord.gg/8tsmAVtqZx" target="_blank" rel="noopener">Join Discord</a>
+      </div>
+    </section>
+
+    <section id="profile" class="page">
+      <div class="section-heading">
+        <div class="eyebrow"><span class="status-dot"></span> Account</div>
+        <h2>Your profile</h2>
+        <p>Your Discord identity, shown on Minehut.</p>
+      </div>
+      <div id="profileCard" class="profile-card glass-card">
+        <div class="profile-avatar placeholder-avatar">?</div>
+        <div>
+          <span class="server-label">Not signed in</span>
+          <h3>Welcome to Minehut</h3>
+          <p>Sign in with Discord to see your profile here.</p>
+          <button class="discord-button" data-action="login">Login with Discord</button>
+        </div>
+      </div>
+      <div class="developer-login glass-card">
+        <div class="section-heading compact">
+          <div class="eyebrow"><span class="status-dot"></span> Developer</div>
+          <h3>Developer sign in</h3>
+          <p>Developer access is separate from your Discord account.</p>
+        </div>
+        <form id="developerLoginForm">
+          <input id="developerUsername" type="text" placeholder="Developer username" autocomplete="username" required>
+          <input id="developerPassword" type="password" placeholder="Developer password" autocomplete="current-password" required>
+          <button class="discord-button" type="submit">Sign in as developer</button>
+        </form>
+        <p id="developerMessage" class="redeem-message" aria-live="polite"></p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <span>© <span id="year"></span> Minehut</span>
+    <span>Built for the community</span>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
