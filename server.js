@@ -5,10 +5,10 @@ const path = require("path");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const BASE_URL = process.env.BASE_URL || \`http://localhost:\${PORT}\`;
+const BASE_URL = process.env.BASE_URL || `http://localhost:\${PORT}`;
 const CLIENT_ID = process.env.DISCORD_CLIENT_ID;
 const CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET;
-const REDIRECT_URI = process.env.DISCORD_REDIRECT_URI || \`\${BASE_URL}/auth/discord/callback\`;
+const REDIRECT_URI = process.env.DISCORD_REDIRECT_URI || `\${BASE_URL}/auth/discord/callback`;
 const COOKIE_SECRET = process.env.COOKIE_SECRET;
 const DEVELOPER_USR = process.env.DEVELOPER_USR;
 const DEVELOPER_PASS = process.env.DEVELOPER_PASS;
@@ -157,8 +157,8 @@ async function getDeveloper(req) {
     if (!username || !signature || signature !== sign(username)) return null;
 
     const result = await pool.query(
-      \`SELECT username, password_salt, password_hash, password_encrypted, role, created_at
-       FROM developer_users WHERE username = $1 LIMIT 1\`,
+      `SELECT username, password_salt, password_hash, password_encrypted, role, created_at
+       FROM developer_users WHERE username = $1 LIMIT 1`,
       [username]
     );
 
@@ -238,7 +238,7 @@ app.get("/auth/discord", (req, res) => {
     state
   });
 
-  res.redirect(\`https://discord.com/oauth2/authorize?\${params}\`);
+  res.redirect(`https://discord.com/oauth2/authorize?\${params}`);
 });
 
 app.get("/auth/discord/callback", async (req, res) => {
@@ -267,7 +267,7 @@ app.get("/auth/discord/callback", async (req, res) => {
       console.error("Discord token exchange failed:", tokenResponse.status, tokenText);
       console.error("OAuth redirect URI used:", REDIRECT_URI);
       return res.status(500).send(
-        \`Discord token exchange failed. HTTP \${tokenResponse.status}. Check the Render logs for the exact Discord error.\`
+        `Discord token exchange failed. HTTP \${tokenResponse.status}. Check the Render logs for the exact Discord error.`
       );
     }
 
@@ -285,7 +285,7 @@ app.get("/auth/discord/callback", async (req, res) => {
     }
 
     const userResponse = await fetch("https://discord.com/api/users/@me", {
-      headers: { Authorization: \`Bearer \${token.access_token}\` }
+      headers: { Authorization: `Bearer \${token.access_token}` }
     });
 
     const userText = await userResponse.text();
@@ -320,7 +320,7 @@ app.get("/auth/discord/callback", async (req, res) => {
 app.get("/api/discord-server", async (req, res) => {
   try {
     const response = await fetch(
-      \`https://discord.com/api/v10/invites/\${DISCORD_INVITE_CODE}?with_counts=true\`
+      `https://discord.com/api/v10/invites/\${DISCORD_INVITE_CODE}?with_counts=true`
     );
     if (!response.ok) {
       console.error("Discord invite lookup failed:", response.status);
@@ -336,11 +336,11 @@ app.get("/api/discord-server", async (req, res) => {
     }
 
     const iconUrl = guild.icon
-      ? \`https://cdn.discordapp.com/icons/\${guild.id}/\${guild.icon}.\${guild.icon.startsWith("a_") ? "gif" : "png"}?size=256\`
+      ? `https://cdn.discordapp.com/icons/\${guild.id}/\${guild.icon}.\${guild.icon.startsWith("a_") ? "gif" : "png"}?size=256`
       : null;
 
     const bannerUrl = guild.banner
-      ? \`https://cdn.discordapp.com/banners/\${guild.id}/\${guild.banner}.\${guild.banner.startsWith("a_") ? "gif" : "png"}?size=1024\`
+      ? `https://cdn.discordapp.com/banners/\${guild.id}/\${guild.banner}.\${guild.banner.startsWith("a_") ? "gif" : "png"}?size=1024`
       : null;
 
     res.json({
@@ -351,7 +351,7 @@ app.get("/api/discord-server", async (req, res) => {
       banner: bannerUrl,
       approximateMemberCount: invite.approximate_member_count ?? null,
       approximatePresenceCount: invite.approximate_presence_count ?? null,
-      invite: \`https://discord.gg/\${DISCORD_INVITE_CODE}\`
+      invite: `https://discord.gg/\${DISCORD_INVITE_CODE}`
     });
   } catch (error) {
     console.error("Discord server lookup error:", error);
@@ -409,7 +409,7 @@ app.get("/api/developer/store", async (req, res) => {
     const pricesResult = await pool.query(
       "SELECT mcfa, minecraft FROM store_prices WHERE id = 1 LIMIT 1"
     );
-    const codesResult = await pool.query(\`
+    const codesResult = await pool.query(`
       SELECT
         c.code,
         c.usage,
@@ -418,7 +418,7 @@ app.get("/api/developer/store", async (req, res) => {
       LEFT JOIN redeem_code_redemptions r ON r.code = c.code
       GROUP BY c.code, c.usage, c.created_at
       ORDER BY c.created_at DESC
-    \`);
+    `);
 
     res.json({
       ok: true,
@@ -456,12 +456,12 @@ app.put("/api/developer/store", async (req, res) => {
     const minecraft = String(prices.minecraft ?? old.minecraft).trim() || "<insert custom price>";
 
     await pool.query(
-      \`INSERT INTO store_prices (id, mcfa, minecraft, updated_at)
+      `INSERT INTO store_prices (id, mcfa, minecraft, updated_at)
        VALUES (1, $1, $2, NOW())
        ON CONFLICT (id) DO UPDATE
        SET mcfa = EXCLUDED.mcfa,
            minecraft = EXCLUDED.minecraft,
-           updated_at = NOW()\`,
+           updated_at = NOW()`,
       [mcfa, minecraft]
     );
 
@@ -546,8 +546,8 @@ app.post("/api/developer/login", async (req, res) => {
 
   try {
     const result = await pool.query(
-      \`SELECT username, password_salt, password_hash, role
-       FROM developer_users WHERE username = $1 LIMIT 1\`,
+      `SELECT username, password_salt, password_hash, role
+       FROM developer_users WHERE username = $1 LIMIT 1`,
       [username]
     );
     const developer = result.rows[0];
@@ -605,11 +605,11 @@ app.get("/api/developer/users", async (req, res) => {
   }
 
   try {
-    const result = await pool.query(\`
+    const result = await pool.query(`
       SELECT username, role, created_at, password_encrypted
       FROM developer_users
       ORDER BY created_at ASC
-    \`);
+    `);
 
     res.json({
       ok: true,
@@ -658,9 +658,9 @@ app.post("/api/developer/users", async (req, res) => {
     const passwordHash = hashPassword(password);
 
     await pool.query(
-      \`INSERT INTO developer_users
+      `INSERT INTO developer_users
        (username, password_salt, password_hash, password_encrypted, role)
-       VALUES ($1, $2, $3, $4, 'developer')\`,
+       VALUES ($1, $2, $3, $4, 'developer')`,
       [
         username,
         passwordHash.salt,
