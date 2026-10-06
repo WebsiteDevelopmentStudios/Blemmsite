@@ -5,10 +5,10 @@ const path = require("path");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const BASE_URL = process.env.BASE_URL || `http://localhost:\${PORT}`;
+const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
 const CLIENT_ID = process.env.DISCORD_CLIENT_ID;
 const CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET;
-const REDIRECT_URI = process.env.DISCORD_REDIRECT_URI || `\${BASE_URL}/auth/discord/callback`;
+const REDIRECT_URI = process.env.DISCORD_REDIRECT_URI || `${BASE_URL}/auth/discord/callback`;
 const COOKIE_SECRET = process.env.COOKIE_SECRET;
 const DISCORD_INVITE_CODE = "8tsmAVtqZx";
 const DISCORD_GUILD_ID = "1484873038926319739";
@@ -201,7 +201,7 @@ app.get("/auth/discord", (req, res) => {
     state
   });
 
-  res.redirect(`https://discord.com/oauth2/authorize?\${params}`);
+  res.redirect(`https://discord.com/oauth2/authorize?${params}`);
 });
 
 app.get("/auth/discord/callback", async (req, res) => {
@@ -230,7 +230,7 @@ app.get("/auth/discord/callback", async (req, res) => {
       console.error("Discord token exchange failed:", tokenResponse.status, tokenText);
       console.error("OAuth redirect URI used:", REDIRECT_URI);
       return res.status(500).send(
-        `Discord token exchange failed. HTTP \${tokenResponse.status}. Check the Render logs for the exact Discord error.`
+        `Discord token exchange failed. HTTP ${tokenResponse.status}. Check the Render logs for the exact Discord error.`
       );
     }
 
@@ -248,7 +248,7 @@ app.get("/auth/discord/callback", async (req, res) => {
     }
 
     const userResponse = await fetch("https://discord.com/api/users/@me", {
-      headers: { Authorization: `Bearer \${token.access_token}` }
+      headers: { Authorization: `Bearer ${token.access_token}` }
     });
 
     const userText = await userResponse.text();
@@ -284,7 +284,7 @@ app.get("/auth/discord/callback", async (req, res) => {
 app.get("/api/discord-server", async (req, res) => {
   try {
     const response = await fetch(
-      `https://discord.com/api/v10/invites/\${DISCORD_INVITE_CODE}?with_counts=true`
+      `https://discord.com/api/v10/invites/${DISCORD_INVITE_CODE}?with_counts=true`
     );
     if (!response.ok) {
       console.error("Discord invite lookup failed:", response.status);
@@ -300,11 +300,11 @@ app.get("/api/discord-server", async (req, res) => {
     }
 
     const iconUrl = guild.icon
-      ? `https://cdn.discordapp.com/icons/\${guild.id}/\${guild.icon}.\${guild.icon.startsWith("a_") ? "gif" : "png"}?size=256`
+      ? `https://cdn.discordapp.com/icons/${guild.id}/${guild.icon}.${guild.icon.startsWith("a_") ? "gif" : "png"}?size=256`
       : null;
 
     const bannerUrl = guild.banner
-      ? `https://cdn.discordapp.com/banners/\${guild.id}/\${guild.banner}.\${guild.banner.startsWith("a_") ? "gif" : "png"}?size=1024`
+      ? `https://cdn.discordapp.com/banners/${guild.id}/${guild.banner}.${guild.banner.startsWith("a_") ? "gif" : "png"}?size=1024`
       : null;
 
     res.json({
@@ -315,7 +315,7 @@ app.get("/api/discord-server", async (req, res) => {
       banner: bannerUrl,
       approximateMemberCount: invite.approximate_member_count ?? null,
       approximatePresenceCount: invite.approximate_presence_count ?? null,
-      invite: `https://discord.gg/\${DISCORD_INVITE_CODE}`
+      invite: `https://discord.gg/${DISCORD_INVITE_CODE}`
     });
   } catch (error) {
     console.error("Discord server lookup error:", error);
