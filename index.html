@@ -43,6 +43,7 @@
     </a>
     <nav class="nav-links" aria-label="Main navigation">
       <a href="#home" data-page="home" class="nav-link active">Shop</a>
+      <a href="#game" data-page="game" class="nav-link">Game</a>
       <a href="#discord" data-page="discord" class="nav-link">Discord</a>
       <a href="#profile" data-page="profile" class="nav-link">Profile</a>
     </nav>
@@ -105,6 +106,24 @@
           <button id="redeemButton" class="ghost-button" type="button">Redeem</button>
         </div>
         <p id="redeemMessage" class="redeem-message" aria-live="polite"></p>
+      </div>
+    </section>
+
+    <section id="game" class="page">
+      <div class="section-heading">
+        <div class="eyebrow"><span class="status-dot"></span> Game</div>
+        <h2>Play</h2>
+        <p>Play the MineLoot game directly from the website.</p>
+      </div>
+      <div class="game-panel glass-card">
+        <iframe
+          id="gameFrame"
+          title="MineLoot Game"
+          src="about:blank"
+          loading="lazy"
+          allow="fullscreen; autoplay; gamepad; clipboard-read; clipboard-write"
+          allowfullscreen>
+        </iframe>
       </div>
     </section>
 
