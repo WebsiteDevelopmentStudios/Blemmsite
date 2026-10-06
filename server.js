@@ -10,13 +10,8 @@ const CLIENT_ID = process.env.DISCORD_CLIENT_ID;
 const CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET;
 const REDIRECT_URI = process.env.DISCORD_REDIRECT_URI || `\${BASE_URL}/auth/discord/callback`;
 const COOKIE_SECRET = process.env.COOKIE_SECRET;
-const DEVELOPER_USR = process.env.DEVELOPER_USR;
-const DEVELOPER_PASS = process.env.DEVELOPER_PASS;
 const DISCORD_INVITE_CODE = "8tsmAVtqZx";
 const DISCORD_GUILD_ID = "1484873038926319739";
-const MINECRAFT_REDEEM_CODES = (process.env.MINECRAFT_REDEEM_CODES || "")
-  .split(",").map(code => code.trim()).filter(Boolean);
-
 const DATA_API_URL = (process.env.DATA_API_URL || "").replace(/\/$/, "");
 const DATA_API_SECRET = process.env.DATA_API_SECRET;
 if (!DATA_API_URL || !DATA_API_SECRET) {
@@ -38,24 +33,6 @@ async function dataQuery(sql, params = []) {
   return { rows: Array.isArray(payload.rows) ? payload.rows : [], rowCount: Number(payload.rowCount || 0) };
 }
 const pool = { query: dataQuery };
-
-function normalizeStoreCodes(codes, redeemed = []) {
-  const legacyRedeemed = new Set(redeemed);
-  return (Array.isArray(codes) ? codes : []).map(item => {
-    if (typeof item === "string") {
-      return {
-        code: item.trim(),
-        usage: "single-user",
-        redeemedBy: legacyRedeemed.has(item.trim()) ? ["legacy"] : []
-      };
-    }
-    return {
-      code: String(item?.code || "").trim(),
-      usage: item?.usage === "per-user" ? "per-user" : "single-user",
-      redeemedBy: Array.isArray(item?.redeemedBy) ? item.redeemedBy.map(String) : []
-    };
-  }).filter(item => item.code);
-}
 
 function hashPassword(password, salt = crypto.randomBytes(16).toString("hex")) {
   const hash = crypto.pbkdf2Sync(password, salt, 120000, 64, "sha512").toString("hex");
@@ -186,20 +163,6 @@ async function initializeDatabase() {
     await pool.query("INSERT INTO store_prices (id, mcfa, minecraft) VALUES ($1, $2, $3)", [
       1, process.env.MCFA_PRICE || "<insert custom price>", process.env.MINECRAFT_CODE_PRICE || "<insert custom price>"
     ]);
-  }
-  if (DEVELOPER_USR && DEVELOPER_PASS) {
-    const owner = await pool.query("SELECT username FROM developer_users WHERE username = $1 LIMIT 1", [DEVELOPER_USR]);
-    if (owner.rowCount === 0) {
-      const password = hashPassword(DEVELOPER_PASS);
-      await pool.query(
-        `INSERT INTO developer_users
-           (username, password_salt, password_hash, password_encrypted, role)
-         VALUES ($1, $2, $3, NULL, 'owner')`,
-        [DEVELOPER_USR, password.salt, password.hash]
-      );
-    } else {
-      await pool.query("UPDATE developer_users SET role = 'owner' WHERE username = $1", [DEVELOPER_USR]);
-    }
   }
 }
 
@@ -690,7 +653,7 @@ app.delete("/api/developer/users/:username", async (req, res) => {
 
   if (
     username.toLowerCase() === String(developer.username).toLowerCase() ||
-    username.toLowerCase() === String(DEVELOPER_USR || "").toLowerCase()
+    developer.role === "owner"
   ) {
     return res.status(400).json({ ok: false, message: "The owner account cannot be deleted." });
   }
