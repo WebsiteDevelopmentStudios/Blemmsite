@@ -2,8 +2,6 @@ require("dotenv").config();
 const express = require("express");
 const crypto = require("crypto");
 const path = require("path");
-const fs = require("fs");
-const { Pool } = require("pg");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -14,22 +12,32 @@ const REDIRECT_URI = process.env.DISCORD_REDIRECT_URI || \`\${BASE_URL}/auth/dis
 const COOKIE_SECRET = process.env.COOKIE_SECRET;
 const DEVELOPER_USR = process.env.DEVELOPER_USR;
 const DEVELOPER_PASS = process.env.DEVELOPER_PASS;
-const DEVELOPER_FILE = path.join(__dirname, "developer-data.json");
-const STORE_FILE = path.join(__dirname, "store-data.json");
 const DISCORD_INVITE_CODE = "8tsmAVtqZx";
 const DISCORD_GUILD_ID = "1484873038926319739";
 const MINECRAFT_REDEEM_CODES = (process.env.MINECRAFT_REDEEM_CODES || "")
   .split(",").map(code => code.trim()).filter(Boolean);
 
-if (!process.env.DATABASE_URL) {
-  console.error("DATABASE_URL is required. Connect a Render PostgreSQL database before starting Blemmsite.");
+const DATA_API_URL = (process.env.DATA_API_URL || "").replace(/\/$/, "");
+const DATA_API_SECRET = process.env.DATA_API_SECRET;
+if (!DATA_API_URL || !DATA_API_SECRET) {
+  console.error("DATA_API_URL and DATA_API_SECRET are required for Cloudflare D1 persistence.");
   process.exit(1);
 }
-
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.DATABASE_SSL === "true" ? { rejectUnauthorized: false } : undefined
-});
+async function dataQuery(sql, params = []) {
+  const response = await fetch(DATA_API_URL + "/sql", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-Data-Secret": DATA_API_SECRET },
+    body: JSON.stringify({ sql, params })
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok || !payload.ok) {
+    const error = new Error(payload.message || `Cloudflare data request failed with HTTP ${response.status}`);
+    error.code = payload.code;
+    throw error;
+  }
+  return { rows: Array.isArray(payload.rows) ? payload.rows : [], rowCount: Number(payload.rowCount || 0) };
+}
+const pool = { query: dataQuery };
 
 function normalizeStoreCodes(codes, redeemed = []) {
   const legacyRedeemed = new Set(redeemed);
@@ -171,164 +179,27 @@ async function requireDeveloperPage(req, res, next) {
 }
 
 async function initializeDatabase() {
-  const client = await pool.connect();
-
-  try {
-    await client.query("BEGIN");
-
-    await client.query(\`
-      CREATE TABLE IF NOT EXISTS schema_migrations (
-        version INTEGER PRIMARY KEY,
-        applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-      );
-
-      CREATE TABLE IF NOT EXISTS developer_users (
-        username VARCHAR(32) PRIMARY KEY,
-        password_salt TEXT NOT NULL,
-        password_hash TEXT NOT NULL,
-        password_encrypted TEXT,
-        role VARCHAR(32) NOT NULL DEFAULT 'developer',
-        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-      );
-
-      CREATE TABLE IF NOT EXISTS store_prices (
-        id SMALLINT PRIMARY KEY DEFAULT 1 CHECK (id = 1),
-        mcfa TEXT NOT NULL,
-        minecraft TEXT NOT NULL,
-        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-      );
-
-      CREATE TABLE IF NOT EXISTS redeem_codes (
-        code VARCHAR(100) PRIMARY KEY,
-        usage VARCHAR(16) NOT NULL CHECK (usage IN ('per-user', 'single-user')),
-        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-      );
-
-      CREATE TABLE IF NOT EXISTS redeem_code_redemptions (
-        code VARCHAR(100) NOT NULL REFERENCES redeem_codes(code) ON DELETE CASCADE,
-        user_id VARCHAR(64) NOT NULL,
-        redeemed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-        PRIMARY KEY (code, user_id)
-      );
-
-      CREATE INDEX IF NOT EXISTS redeem_code_redemptions_code_idx
-        ON redeem_code_redemptions(code);
-    \`);
-
-    const migration = await client.query(
-      "SELECT 1 FROM schema_migrations WHERE version = 1 LIMIT 1"
-    );
-
-    if (migration.rowCount === 0) {
-      let developerData = null;
-      let storeData = null;
-
-      try {
-        if (fs.existsSync(DEVELOPER_FILE)) {
-          developerData = JSON.parse(fs.readFileSync(DEVELOPER_FILE, "utf8"));
-        }
-      } catch (error) {
-        console.error("Could not read legacy developer-data.json for migration:", error);
-      }
-
-      try {
-        if (fs.existsSync(STORE_FILE)) {
-          storeData = JSON.parse(fs.readFileSync(STORE_FILE, "utf8"));
-        }
-      } catch (error) {
-        console.error("Could not read legacy store-data.json for migration:", error);
-      }
-
-      const legacyUsers = Array.isArray(developerData?.users) ? developerData.users : [];
-      for (const user of legacyUsers) {
-        if (!user?.username || !user?.password?.salt || !user?.password?.hash) continue;
-
-        await client.query(
-          \`INSERT INTO developer_users
-             (username, password_salt, password_hash, password_encrypted, role, created_at)
-           VALUES ($1, $2, $3, $4, $5, COALESCE($6::timestamptz, NOW()))
-           ON CONFLICT (username) DO NOTHING\`,
-          [
-            String(user.username),
-            String(user.password.salt),
-            String(user.password.hash),
-            user.passwordEncrypted ? String(user.passwordEncrypted) : null,
-            user.role === "owner" ? "owner" : "developer",
-            user.createdAt || null
-          ]
-        );
-      }
-
-      const fallbackMcfa = process.env.MCFA_PRICE || "<insert custom price>";
-      const fallbackMinecraft = process.env.MINECRAFT_CODE_PRICE || "<insert custom price>";
-      const prices = storeData?.prices || {};
-
-      await client.query(
-        \`INSERT INTO store_prices (id, mcfa, minecraft)
-         VALUES (1, $1, $2)
-         ON CONFLICT (id) DO NOTHING\`,
-        [
-          String(prices.mcfa ?? fallbackMcfa).trim() || fallbackMcfa,
-          String(prices.minecraft ?? fallbackMinecraft).trim() || fallbackMinecraft
-        ]
-      );
-
-      const codes = storeData?.codes ?? MINECRAFT_REDEEM_CODES;
-      const legacyRedeemed = Array.isArray(storeData?.redeemed) ? storeData.redeemed : [];
-      for (const item of normalizeStoreCodes(codes, legacyRedeemed)) {
-        await client.query(
-          \`INSERT INTO redeem_codes (code, usage)
-           VALUES ($1, $2)
-           ON CONFLICT (code) DO NOTHING\`,
-          [item.code, item.usage]
-        );
-
-        for (const userId of item.redeemedBy) {
-          await client.query(
-            \`INSERT INTO redeem_code_redemptions (code, user_id)
-             VALUES ($1, $2)
-             ON CONFLICT (code, user_id) DO NOTHING\`,
-            [item.code, userId]
-          );
-        }
-      }
-
-      await client.query(
-        "INSERT INTO schema_migrations (version) VALUES (1)"
-      );
-
-      console.log("PostgreSQL migration complete. Legacy JSON data was imported when present.");
-    }
-
-    if (DEVELOPER_USR && DEVELOPER_PASS) {
+  const health = await fetch(DATA_API_URL + "/health", { headers: { "X-Data-Secret": DATA_API_SECRET } });
+  if (!health.ok) throw new Error("Cloudflare D1 data service is unavailable.");
+  const prices = await pool.query("SELECT mcfa, minecraft FROM store_prices WHERE id = 1 LIMIT 1");
+  if (prices.rowCount === 0) {
+    await pool.query("INSERT INTO store_prices (id, mcfa, minecraft) VALUES ($1, $2, $3)", [
+      1, process.env.MCFA_PRICE || "<insert custom price>", process.env.MINECRAFT_CODE_PRICE || "<insert custom price>"
+    ]);
+  }
+  if (DEVELOPER_USR && DEVELOPER_PASS) {
+    const owner = await pool.query("SELECT username FROM developer_users WHERE username = $1 LIMIT 1", [DEVELOPER_USR]);
+    if (owner.rowCount === 0) {
       const password = hashPassword(DEVELOPER_PASS);
-
-      const owner = await client.query(
-        "SELECT username FROM developer_users WHERE username = $1 LIMIT 1",
-        [DEVELOPER_USR]
+      await pool.query(
+        `INSERT INTO developer_users
+           (username, password_salt, password_hash, password_encrypted, role)
+         VALUES ($1, $2, $3, NULL, 'owner')`,
+        [DEVELOPER_USR, password.salt, password.hash]
       );
-
-      if (owner.rowCount === 0) {
-        await client.query(
-          \`INSERT INTO developer_users
-             (username, password_salt, password_hash, password_encrypted, role)
-           VALUES ($1, $2, $3, NULL, 'owner')\`,
-          [DEVELOPER_USR, password.salt, password.hash]
-        );
-      } else {
-        await client.query(
-          "UPDATE developer_users SET role = 'owner' WHERE username = $1",
-          [DEVELOPER_USR]
-        );
-      }
+    } else {
+      await pool.query("UPDATE developer_users SET role = 'owner' WHERE username = $1", [DEVELOPER_USR]);
     }
-
-    await client.query("COMMIT");
-  } catch (error) {
-    await client.query("ROLLBACK");
-    throw error;
-  } finally {
-    client.release();
   }
 }
 
@@ -512,69 +383,20 @@ app.get("/api/store", async (req, res) => {
 
 app.post("/api/redeem", async (req, res) => {
   const user = readSession(req);
-  if (!user?.id) {
-    return res.status(401).json({ ok: false, message: "Sign in with Discord before redeeming a code." });
-  }
-
+  if (!user?.id) return res.status(401).json({ ok: false, message: "Sign in with Discord before redeeming a code." });
   const code = String(req.body?.code || "").trim();
   if (!code) return res.status(400).json({ ok: false, message: "Enter a redeem code." });
-
-  const client = await pool.connect();
-
   try {
-    await client.query("BEGIN");
-
-    const codeResult = await client.query(
-      "SELECT code, usage FROM redeem_codes WHERE code = $1 LIMIT 1",
-      [code]
-    );
-
-    if (codeResult.rowCount === 0) {
-      await client.query("ROLLBACK");
-      return res.status(404).json({ ok: false, message: "That redeem code is invalid." });
-    }
-
-    const entry = codeResult.rows[0];
-    const existing = await client.query(
-      "SELECT user_id FROM redeem_code_redemptions WHERE code = $1",
-      [entry.code]
-    );
-
-    if (entry.usage === "single-user" && existing.rowCount > 0) {
-      await client.query("ROLLBACK");
-      return res.status(409).json({ ok: false, message: "That redeem code has already been redeemed." });
-    }
-
-    if (
-      entry.usage === "per-user" &&
-      existing.rows.some(row => String(row.user_id) === String(user.id))
-    ) {
-      await client.query("ROLLBACK");
-      return res.status(409).json({ ok: false, message: "You have already redeemed that code." });
-    }
-
-    await client.query(
-      \`INSERT INTO redeem_code_redemptions (code, user_id)
-       VALUES ($1, $2)\`,
-      [entry.code, String(user.id)]
-    );
-
-    await client.query("COMMIT");
-    res.json({ ok: true, message: "Code redeemed successfully." });
+    const response = await fetch(DATA_API_URL + "/redeem", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Data-Secret": DATA_API_SECRET },
+      body: JSON.stringify({ userId: String(user.id), code })
+    });
+    const payload = await response.json().catch(() => ({}));
+    return res.status(response.status).json(payload);
   } catch (error) {
-    try { await client.query("ROLLBACK"); } catch {}
-
-    if (error.code === "23505") {
-      return res.status(409).json({
-        ok: false,
-        message: "That redeem code has already been redeemed by this account."
-      });
-    }
-
     console.error("Could not save redemption:", error);
-    res.status(500).json({ ok: false, message: "Could not save the redemption." });
-  } finally {
-    client.release();
+    return res.status(500).json({ ok: false, message: "Could not save the redemption." });
   }
 });
 
@@ -908,11 +730,9 @@ app.post("/auth/logout", (req, res) => {
 async function start() {
   try {
     await initializeDatabase();
-    await pool.query("SELECT 1");
-    app.listen(PORT, () => console.log(\`Blemm running at \${BASE_URL} with PostgreSQL persistence\`));
+    app.listen(PORT, () => console.log(`Blemm running at ${BASE_URL} with Cloudflare D1 persistence`));
   } catch (error) {
-    console.error("Could not initialize PostgreSQL:", error);
-    await pool.end();
+    console.error("Could not initialize Cloudflare D1:", error);
     process.exit(1);
   }
 }
