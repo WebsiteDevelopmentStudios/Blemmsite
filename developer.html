@@ -19,7 +19,7 @@
   </div>
 
   <header class="navbar">
-    <a class="brand" href="/#home" aria-label="MineLoot home">
+    <a class="brand" href="/#home" aria-label="MineLoot home" id="developerBrand">
       <span class="brand-mark">M</span><span>MineLoot</span>
     </a>
     <span class="developer-badge">Developer Portal</span>
@@ -90,6 +90,12 @@
 
   <script src="developer.js"></script>
   <script>
+    // Force the developer logo to perform a real navigation/reload to the home page.
+    document.getElementById("developerBrand")?.addEventListener("click", event => {
+      event.preventDefault();
+      window.location.replace("/#home");
+    });
+
     // Keep the protected portal visually clean without changing the site-wide navigation.
     if (window.location.pathname === "/developer.html") {
       window.history.replaceState({}, "", "/#developer");
