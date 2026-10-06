@@ -16,12 +16,12 @@ async function verifyDeveloper() {
   try {
     const response = await api("/api/developer/me");
     if (!response.ok) {
-      window.location.replace("/index.html#profile");
+      window.location.replace("/#profile");
       return false;
     }
     return true;
   } catch {
-    window.location.replace("/index.html#profile");
+    window.location.replace("/#profile");
     return false;
   }
 }
@@ -29,7 +29,7 @@ async function verifyDeveloper() {
 async function loadStore() {
   const response = await api("/api/developer/store");
   if (!response.ok) {
-    window.location.replace("/index.html#profile");
+    window.location.replace("/#profile");
     return;
   }
   const data = await response.json();
@@ -158,7 +158,7 @@ document.getElementById("developerLogout").addEventListener("click", async () =>
   try {
     await api("/api/developer/logout", { method: "POST" });
   } finally {
-    window.location.assign("/index.html#profile");
+    window.location.assign("/#profile");
   }
 });
 
