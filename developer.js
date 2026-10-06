@@ -16,7 +16,7 @@ async function verifyDeveloper() {
   try {
     const response = await api("/api/developer/me");
     if (!response.ok) {
-      window.location.replace("/#profile");
+      window.location.href = "/#profile";
       return false;
     }
     return true;
@@ -158,7 +158,7 @@ document.getElementById("developerLogout").addEventListener("click", async () =>
   try {
     await api("/api/developer/logout", { method: "POST" });
   } finally {
-    window.location.assign("/#profile");
+    window.location.href = "/#profile";
   }
 });
 
