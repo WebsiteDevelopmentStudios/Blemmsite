@@ -247,6 +247,254 @@ document.getElementById("developerStoreForm")?.addEventListener("submit", async 
 });
 
 
+// MineLoot Arcade games
+(function initArcade() {
+  const moneyEl = document.getElementById("gameMoney");
+  if (!moneyEl) return;
+
+  let money = Number.parseInt(localStorage.getItem("mineloot_arcade_money") || "150", 10);
+  if (!Number.isFinite(money) || money < 150) money = 150;
+
+  const cooldowns = { doubleButton: 2000, tripleButton: 5000, quadButton: 10000 };
+  const labels = { doubleButton: "2x", tripleButton: "3x", quadButton: "4x" };
+  const failures = { doubleButton: 0.30, tripleButton: 0.60, quadButton: 0.80 };
+  const multipliers = { doubleButton: 2, tripleButton: 3, quadButton: 4 };
+
+  function renderMoney() {
+    moneyEl.textContent = Math.floor(money).toLocaleString();
+    localStorage.setItem("mineloot_arcade_money", String(Math.floor(money)));
+  }
+  renderMoney();
+
+  Object.keys(cooldowns).forEach(id => {
+    document.getElementById(id)?.addEventListener("click", () => {
+      const button = document.getElementById(id);
+      if (button.disabled) return;
+      button.disabled = true;
+
+      const multiplier = multipliers[id];
+      const failed = Math.random() < failures[id];
+      let result;
+
+      if (failed) {
+        if (money > 300) {
+          if (id === "doubleButton") money = Math.max(150, Math.floor(money * 0.5));
+          else if (id === "tripleButton") money = Math.max(150, Math.floor(money * 0.2));
+          else money = 150;
+          result = `${labels[id]} failed. Your balance was reduced, but cannot go below $150.`;
+        } else {
+          result = `${labels[id]} failed, but your balance is $300 or less, so no money was lost.`;
+        }
+      } else {
+        money = Math.floor(money * multiplier);
+        result = `Success! ${labels[id]} turned your balance into ${money.toLocaleString()}.`;
+      }
+
+      renderMoney();
+      document.getElementById("doubleStatus").textContent = result;
+
+      const seconds = cooldowns[id] / 1000;
+      let remaining = seconds;
+      button.textContent = `${labels[id]} · ${remaining}s`;
+      const timer = setInterval(() => {
+        remaining -= 1;
+        if (remaining <= 0) {
+          clearInterval(timer);
+          button.disabled = false;
+          button.innerHTML = `<strong>${labels[id]}</strong><span>${id === "doubleButton" ? "30% fail · 2s cooldown" : id === "tripleButton" ? "60% fail · 5s cooldown" : "80% fail · 10s cooldown"}</span>`;
+        } else {
+          button.textContent = `${labels[id]} · ${remaining}s`;
+        }
+      }, 1000);
+    });
+  });
+
+  document.getElementById("resetMoneyButton")?.addEventListener("click", () => {
+    money = 150;
+    renderMoney();
+    document.getElementById("doubleStatus").textContent = "Balance reset to $150.";
+  });
+
+  // Snake
+  const canvas = document.getElementById("snakeCanvas");
+  const snakeStart = document.getElementById("snakeStartButton");
+  const snakeScoreEl = document.getElementById("snakeScore");
+  const snakeStatus = document.getElementById("snakeStatus");
+  if (canvas && snakeStart) {
+    const ctx = canvas.getContext("2d");
+    const size = 21;
+    let snake = [], food = { x: 10, y: 10 }, direction = { x: 1, y: 0 };
+    let nextDirection = { x: 1, y: 0 }, snakeTimer = null, snakeScore = 0, running = false;
+
+    function spawnFood() {
+      do {
+        food = { x: Math.floor(Math.random() * size), y: Math.floor(Math.random() * size) };
+      } while (snake.some(part => part.x === food.x && part.y === food.y));
+    }
+    function drawSnake() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const cell = canvas.width / size;
+      ctx.fillStyle = "#0b0d17";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "#8f78ad";
+      ctx.fillRect(food.x * cell + 3, food.y * cell + 3, cell - 6, cell - 6);
+      snake.forEach((part, i) => {
+        ctx.fillStyle = i === 0 ? "#b9a4d1" : "#78639c";
+        ctx.fillRect(part.x * cell + 2, part.y * cell + 2, cell - 4, cell - 4);
+      });
+    }
+    function startSnake() {
+      clearInterval(snakeTimer);
+      snake = [{ x: 10, y: 10 }, { x: 9, y: 10 }, { x: 8, y: 10 }];
+      direction = { x: 1, y: 0 }; nextDirection = { x: 1, y: 0 };
+      snakeScore = 0; running = true;
+      snakeScoreEl.textContent = "0";
+      snakeStatus.textContent = "Go!";
+      spawnFood(); drawSnake();
+      snakeTimer = setInterval(tickSnake, 115);
+    }
+    function tickSnake() {
+      direction = nextDirection;
+      const head = { x: snake[0].x + direction.x, y: snake[0].y + direction.y };
+      if (head.x < 0 || head.y < 0 || head.x >= size || head.y >= size || snake.some(part => part.x === head.x && part.y === head.y)) {
+        clearInterval(snakeTimer); running = false; snakeStatus.textContent = `Game over. Score: ${snakeScore}.`; return;
+      }
+      snake.unshift(head);
+      if (head.x === food.x && head.y === food.y) {
+        snakeScore += 1; snakeScoreEl.textContent = snakeScore; spawnFood();
+      } else snake.pop();
+      drawSnake();
+    }
+    document.addEventListener("keydown", event => {
+      const keys = {
+        ArrowUp: { x: 0, y: -1 }, w: { x: 0, y: -1 },
+        ArrowDown: { x: 0, y: 1 }, s: { x: 0, y: 1 },
+        ArrowLeft: { x: -1, y: 0 }, a: { x: -1, y: 0 },
+        ArrowRight: { x: 1, y: 0 }, d: { x: 1, y: 0 }
+      };
+      const next = keys[event.key];
+      if (!next || !running) return;
+      if (next.x + direction.x !== 0 || next.y + direction.y !== 0) nextDirection = next;
+      if (event.key.startsWith("Arrow")) event.preventDefault();
+    });
+    snakeStart.addEventListener("click", startSnake);
+    drawSnake();
+  }
+
+  // Reaction test
+  const reactionArea = document.getElementById("reactionArea");
+  const reactionStatus = document.getElementById("reactionStatus");
+  const reactionBest = document.getElementById("reactionBest");
+  if (reactionArea) {
+    let reactionState = "ready", reactionStart = 0, reactionTimeout = null, best = Number(localStorage.getItem("mineloot_reaction_best"));
+    reactionBest.textContent = Number.isFinite(best) ? Math.round(best) : "—";
+    reactionArea.addEventListener("click", () => {
+      if (reactionState === "ready") {
+        reactionState = "waiting";
+        reactionArea.textContent = "Wait...";
+        reactionStatus.textContent = "Don't click until it turns green.";
+        reactionArea.classList.remove("reaction-go");
+        reactionTimeout = setTimeout(() => {
+          reactionState = "go"; reactionStart = performance.now();
+          reactionArea.textContent = "CLICK!";
+          reactionArea.classList.add("reaction-go");
+          reactionStatus.textContent = "Click!";
+        }, 1200 + Math.random() * 2800);
+      } else if (reactionState === "waiting") {
+        clearTimeout(reactionTimeout);
+        reactionState = "ready"; reactionArea.textContent = "Too soon"; reactionArea.classList.remove("reaction-go");
+        reactionStatus.textContent = "Too early. Try again.";
+      } else {
+        const ms = Math.round(performance.now() - reactionStart);
+        reactionState = "ready"; reactionArea.textContent = `${ms} ms`; reactionArea.classList.remove("reaction-go");
+        if (!Number.isFinite(best) || ms < best) {
+          best = ms; reactionBest.textContent = ms; localStorage.setItem("mineloot_reaction_best", String(ms));
+          reactionStatus.textContent = "New best reaction time!";
+        } else reactionStatus.textContent = "Nice. Try to beat your best.";
+      }
+    });
+  }
+
+  // Memory Match
+  const memoryGrid = document.getElementById("memoryGrid");
+  const memoryMoves = document.getElementById("memoryMoves");
+  const memoryStatus = document.getElementById("memoryStatus");
+  const memoryReset = document.getElementById("memoryResetButton");
+  if (memoryGrid) {
+    const symbols = ["◆","●","▲","■","★","✦","⬟","♥"];
+    let first = null, lock = false, moves = 0, matched = 0;
+    function newMemory() {
+      const cards = [...symbols, ...symbols].sort(() => Math.random() - 0.5);
+      first = null; lock = false; moves = 0; matched = 0;
+      memoryMoves.textContent = "0"; memoryStatus.textContent = "Match all the pairs.";
+      memoryGrid.innerHTML = "";
+      cards.forEach(symbol => {
+        const card = document.createElement("button");
+        card.type = "button"; card.className = "memory-card"; card.dataset.symbol = symbol;
+        card.innerHTML = "<span>?</span>";
+        card.addEventListener("click", () => {
+          if (lock || card.classList.contains("matched") || card === first) return;
+          card.classList.add("revealed"); card.innerHTML = `<span>${symbol}</span>`;
+          if (!first) { first = card; return; }
+          moves++; memoryMoves.textContent = moves;
+          const second = card;
+          if (first.dataset.symbol === second.dataset.symbol) {
+            first.classList.add("matched"); second.classList.add("matched");
+            first = null; matched += 2;
+            if (matched === cards.length) memoryStatus.textContent = `Completed in ${moves} moves.`;
+          } else {
+            lock = true;
+            setTimeout(() => {
+              first.classList.remove("revealed"); second.classList.remove("revealed");
+              first.innerHTML = "<span>?</span>"; second.innerHTML = "<span>?</span>";
+              first = null; lock = false;
+            }, 650);
+          }
+        });
+        memoryGrid.appendChild(card);
+      });
+    }
+    memoryReset.addEventListener("click", newMemory);
+    newMemory();
+  }
+
+  // Target Click
+  const targetArea = document.getElementById("targetArea");
+  const targetButton = document.getElementById("targetButton");
+  const targetStart = document.getElementById("targetStartButton");
+  const targetScore = document.getElementById("targetScore");
+  const targetTimer = document.getElementById("targetTimer");
+  const targetStatus = document.getElementById("targetStatus");
+  if (targetArea && targetButton) {
+    let targetRunning = false, targetHits = 0, targetRemaining = 20, targetInterval = null;
+    function moveTarget() {
+      const maxX = Math.max(0, targetArea.clientWidth - targetButton.offsetWidth - 10);
+      const maxY = Math.max(0, targetArea.clientHeight - targetButton.offsetHeight - 10);
+      targetButton.style.left = (5 + Math.random() * maxX) + "px";
+      targetButton.style.top = (5 + Math.random() * maxY) + "px";
+    }
+    targetStart.addEventListener("click", () => {
+      clearInterval(targetInterval);
+      targetRunning = true; targetHits = 0; targetRemaining = 20;
+      targetScore.textContent = "0"; targetTimer.textContent = "20s"; targetStatus.textContent = "Go!";
+      targetButton.hidden = false; moveTarget();
+      targetInterval = setInterval(() => {
+        targetRemaining--;
+        targetTimer.textContent = targetRemaining + "s";
+        if (targetRemaining <= 0) {
+          clearInterval(targetInterval); targetRunning = false; targetButton.hidden = true;
+          targetStatus.textContent = `Round over. You got ${targetHits} hits.`;
+        }
+      }, 1000);
+    });
+    targetButton.addEventListener("click", () => {
+      if (!targetRunning) return;
+      targetHits++; targetScore.textContent = targetHits; moveTarget();
+    });
+    targetButton.hidden = true;
+  }
+})();
+
 loadStore();
 loadDeveloperPanel();
 loadDiscordServer();
