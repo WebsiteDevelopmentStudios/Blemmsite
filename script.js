@@ -120,24 +120,15 @@ function renderProfile(user) {
 
   const serverProfile = user.serverProfile || {};
   const inServer = serverProfile.inServer === true;
-  const safeRoleColor = /^#[0-9a-fA-F]{6}$/.test(serverProfile.roleColor || "")
-    ? serverProfile.roleColor
-    : "#ffffff";
-  const roleStyle = inServer ? ` style="color:${safeRoleColor}"` : "";
-  const roleIcon = inServer && serverProfile.roleIcon
-    ? `<img class="profile-role-icon" src="${escapeHtml(serverProfile.roleIcon)}" alt="" title="${escapeHtml(serverProfile.roleName || "Discord role")}">`
-    : "";
   const membershipMessage = inServer
-    ? (serverProfile.roleName
-      ? `Member of the Discord server • ${escapeHtml(serverProfile.roleName)}`
-      : "Member of the Discord server")
+    ? "You are in the Discord server."
     : "You aren't in the Discord server.";
 
   card.innerHTML = `
     <img class="profile-avatar" src="${escapeHtml(avatar)}" alt="">
     <div>
       <span class="server-label">Discord account</span>
-      <h3 class="profile-name"${roleStyle}>${roleIcon}${escapeHtml(user.global_name || user.username)}</h3>
+      <h3 class="profile-name">${escapeHtml(user.global_name || user.username)}</h3>
       <p>@${escapeHtml(user.username)} is connected to Minehut.</p>
       <p class="profile-server-status ${inServer ? "profile-server-member" : "profile-server-missing"}">${membershipMessage}</p>
       <button class="ghost-button" id="logoutButton">Log out</button>
