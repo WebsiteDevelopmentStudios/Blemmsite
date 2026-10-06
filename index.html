@@ -111,19 +111,96 @@
 
     <section id="game" class="page">
       <div class="section-heading">
-        <div class="eyebrow"><span class="status-dot"></span> Game</div>
-        <h2>Play</h2>
-        <p>Play the MineLoot game directly from the website.</p>
+        <div class="eyebrow"><span class="status-dot"></span> MineLoot Arcade</div>
+        <h2>Games</h2>
+        <p>Play quick games and challenge your high scores. The MineLoot balance is virtual and has no real-world value.</p>
       </div>
-      <div class="game-panel glass-card">
-        <iframe
-          id="gameFrame"
-          title="MineLoot Game"
-          src="about:blank"
-          loading="lazy"
-          allow="fullscreen; autoplay; gamepad; clipboard-read; clipboard-write"
-          allowfullscreen>
-        </iframe>
+
+      <div class="game-grid">
+        <article class="mini-game glass-card double-game">
+          <div class="game-card-heading">
+            <div>
+              <span class="server-label">Risk game</span>
+              <h3>Double or Nothing</h3>
+            </div>
+            <div class="game-balance">$<span id="gameMoney">150</span></div>
+          </div>
+          <p class="game-description">Try 2x, 3x, or 4x. Bigger multipliers have worse odds. Failed attempts can only remove money when your balance is above $300.</p>
+          <div class="double-buttons">
+            <button class="game-button" id="doubleButton" type="button">
+              <strong>2x</strong><span>30% fail · 2s cooldown</span>
+            </button>
+            <button class="game-button" id="tripleButton" type="button">
+              <strong>3x</strong><span>60% fail · 5s cooldown</span>
+            </button>
+            <button class="game-button" id="quadButton" type="button">
+              <strong>4x</strong><span>80% fail · 10s cooldown</span>
+            </button>
+          </div>
+          <div class="game-status" id="doubleStatus" aria-live="polite">Choose a multiplier.</div>
+          <button class="ghost-button game-reset" id="resetMoneyButton" type="button">Reset to $150</button>
+        </article>
+
+        <article class="mini-game glass-card">
+          <div class="game-card-heading">
+            <div>
+              <span class="server-label">Classic</span>
+              <h3>Snake</h3>
+            </div>
+            <div class="game-score">Score <span id="snakeScore">0</span></div>
+          </div>
+          <div class="snake-wrap">
+            <canvas id="snakeCanvas" width="420" height="420" aria-label="Snake game"></canvas>
+          </div>
+          <div class="game-controls">
+            <button class="ghost-button" id="snakeStartButton" type="button">Start / Restart</button>
+            <span>Use Arrow Keys or WASD</span>
+          </div>
+          <div class="game-status" id="snakeStatus" aria-live="polite">Press Start to play.</div>
+        </article>
+
+        <article class="mini-game glass-card">
+          <div class="game-card-heading">
+            <div>
+              <span class="server-label">Speed test</span>
+              <h3>Reaction</h3>
+            </div>
+            <div class="game-score"><span id="reactionBest">—</span> ms best</div>
+          </div>
+          <button class="reaction-area" id="reactionArea" type="button">Press Start</button>
+          <div class="game-status" id="reactionStatus" aria-live="polite">Wait for the panel to turn green.</div>
+        </article>
+
+        <article class="mini-game glass-card">
+          <div class="game-card-heading">
+            <div>
+              <span class="server-label">Memory</span>
+              <h3>Memory Match</h3>
+            </div>
+            <div class="game-score">Moves <span id="memoryMoves">0</span></div>
+          </div>
+          <div class="memory-grid" id="memoryGrid"></div>
+          <div class="game-status" id="memoryStatus" aria-live="polite">Match all the pairs.</div>
+          <button class="ghost-button game-reset" id="memoryResetButton" type="button">New Game</button>
+        </article>
+
+        <article class="mini-game glass-card">
+          <div class="game-card-heading">
+            <div>
+              <span class="server-label">Arcade</span>
+              <h3>Target Click</h3>
+            </div>
+            <div class="game-score">Hits <span id="targetScore">0</span></div>
+          </div>
+          <div class="target-area" id="targetArea">
+            <button class="target" id="targetButton" type="button" aria-label="Target"></button>
+          </div>
+          <div class="game-controls">
+            <button class="ghost-button" id="targetStartButton" type="button">Start 20s Round</button>
+            <span id="targetTimer">20s</span>
+          </div>
+          <div class="game-status" id="targetStatus" aria-live="polite">Click the target as many times as you can.</div>
+        </article>
       </div>
     </section>
 
