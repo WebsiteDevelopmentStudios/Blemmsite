@@ -246,22 +246,56 @@ document.getElementById("developerStoreForm")?.addEventListener("submit", async 
   }
 });
 
+
 loadStore();
 loadDeveloperPanel();
 loadDiscordServer();
 
 
 document.addEventListener("click", event => {
+  const x = event.clientX;
+  const y = event.clientY;
+
+  // Main expanding ring.
   const ripple = document.createElement("span");
   ripple.className = "click-effect";
-  const burst = document.createElement("span");
-  burst.className = "click-burst";
-  ripple.style.left = event.clientX + "px";
-  ripple.style.top = event.clientY + "px";
-  burst.style.left = event.clientX + "px";
-  burst.style.top = event.clientY + "px";
+  ripple.style.left = x + "px";
+  ripple.style.top = y + "px";
   document.body.appendChild(ripple);
-  document.body.appendChild(burst);
   ripple.addEventListener("animationend", () => ripple.remove());
-  burst.addEventListener("animationend", () => burst.remove());
+
+  // A larger, randomized particle burst gives the click much more impact.
+  const particleCount = 12 + Math.floor(Math.random() * 9);
+  for (let i = 0; i < particleCount; i++) {
+    const particle = document.createElement("span");
+    particle.className = "click-particle";
+
+    const angle = Math.random() * Math.PI * 2;
+    const distance = 24 + Math.random() * 42;
+    const size = 2 + Math.random() * 4;
+    const rotation = Math.random() * 360;
+    const delay = Math.random() * 70;
+    const duration = 360 + Math.random() * 220;
+
+    particle.style.left = x + "px";
+    particle.style.top = y + "px";
+    particle.style.width = size + "px";
+    particle.style.height = size + "px";
+    particle.style.setProperty("--particle-x", Math.cos(angle) * distance + "px");
+    particle.style.setProperty("--particle-y", Math.sin(angle) * distance + "px");
+    particle.style.setProperty("--particle-rotation", rotation + "deg");
+    particle.style.animationDuration = duration + "ms";
+    particle.style.animationDelay = delay + "ms";
+
+    document.body.appendChild(particle);
+    particle.addEventListener("animationend", () => particle.remove());
+  }
+
+  // Small central flash to sell the impact.
+  const flash = document.createElement("span");
+  flash.className = "click-flash";
+  flash.style.left = x + "px";
+  flash.style.top = y + "px";
+  document.body.appendChild(flash);
+  flash.addEventListener("animationend", () => flash.remove());
 });
